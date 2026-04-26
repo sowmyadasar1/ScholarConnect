@@ -1,0 +1,259 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Box, Typography, Grid, Card, CardContent, Chip, Button,
+  Avatar, Snackbar, Alert, Stack, CircularProgress, Divider
+} from '@mui/material';
+import { Briefcase, Star, Check, AlertCircle } from 'lucide-react';
+import { useOutletContext } from 'react-router-dom';
+import { mentorService } from '../services/mentorService';
+
+const Mentors = () => {
+  const { searchQuery } = useOutletContext();
+  const [mentors, setMentors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [requested, setRequested] = useState({});
+  const [snack, setSnack] = useState({ open: false, msg: '', severity: 'success' });
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      loadMentors();
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
+
+  const loadMentors = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      let data;
+      if (searchQuery) {
+        // Use global search if query exists
+        data = await mentorService.listMentors({ search: searchQuery });
+        // Map to match structure for UI consistency
+        data = data.map(m => ({
+          ...m,
+          mentor_id: m.id,
+          mentor_name: m.name,
+          mentor_avatar: m.avatar_url,
+          compatibility_score: 0, // No score for general search results
+          explanation: 'Search result'
+        }));
+      } else {
+        // Use personalized matches by default
+        data = await mentorService.getMatches();
+      }
+      // Sort by compatibility score
+      data.sort((a, b) => (b.compatibility_score || 0) - (a.compatibility_score || 0));
+      setMentors(data);
+    } catch (err) {
+      console.error('Failed to load mentors:', err);
+      setError('Unable to load mentors. Please try a different search or check your profile.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRequest = async (mentorId, mentorName) => {
+    try {
+      await mentorService.requestMentor(mentorId);
+      setRequested(prev => ({ ...prev, [mentorId]: true }));
+      setSnack({ open: true, msg: `Request sent to ${mentorName}! They'll be notified.`, severity: 'success' });
+    } catch (err) {
+      const errorMsg = err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to send invite.';
+      setSnack({
+        open: true,
+        msg: typeof errorMsg === 'object' ? JSON.stringify(errorMsg) : String(errorMsg),
+        severity: 'error'
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  return (
+    <Box>
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h2">Mentor Matches</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          Suggested based on your skills, domain, and experience goals.
+        </Typography>
+      </Box>
+
+      {error && (
+        <Alert severity="warning" sx={{ mb: 3 }} icon={<AlertCircle size={18} />}>
+          {error}
+        </Alert>
+      )}
+
+      {!error && mentors.length === 0 && (
+        <Card sx={{ textAlign: 'center', py: 8 }}>
+          <CardContent>
+            <AlertCircle size={48} color="rgba(255,255,255,0.2)" style={{ marginBottom: 16 }} />
+            <Typography variant="h5" sx={{ mb: 1 }}>No mentor matches yet</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 400, mx: 'auto' }}>
+              Add skills to your profile and sync your GitHub to get personalized mentor matches.
+            </Typography>
+          </CardContent>
+        </Card>
+      )}
+
+      <Grid container spacing={3}>
+        {mentors.map(mentor => {
+            const mentorId = mentor.mentor_id || mentor.id;
+          const score = mentor.compatibility_score || mentor.matchScore || 0;
+          const name = mentor.mentor_name || mentor.name;
+          const avatar = mentor.mentor_avatar || mentor.avatar_url;
+          const skills = mentor.skills || [];
+
+          return (
+            <Grid item xs={12} key={mentorId}>
+              <Card sx={{ 
+                display: 'flex', 
+                flexDirection: { xs: 'column', md: 'row' }, 
+                alignItems: 'stretch',
+                background: '#16181D',
+                borderRadius: 4,
+                overflow: 'hidden',
+                transition: 'transform 0.2s, border-color 0.2s',
+                '&:hover': { borderColor: 'rgba(94, 106, 210, 0.4)', transform: 'translateY(-2px)' }
+              }}>
+                {/* Left: Avatar & ID */}
+                <Box sx={{ 
+                  p: 4, 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  alignItems: 'center', 
+                  minWidth: 220, 
+                  background: 'rgba(255,255,255,0.01)',
+                  borderRight: { md: '1px solid rgba(255,255,255,0.05)' } 
+                }}>
+                  <Box sx={{ position: 'relative', mb: 3 }}>
+                    <Avatar
+                      src={avatar}
+                      sx={{ 
+                        width: 100, height: 100, 
+                        border: '3px solid #5e6ad2',
+                        boxShadow: '0 8px 24px rgba(94, 106, 210, 0.2)' 
+                      }}
+                    >
+                      {name?.[0] || 'M'}
+                    </Avatar>
+                    <Box sx={{ 
+                      position: 'absolute', 
+                      bottom: 0, 
+                      right: 0, 
+                      bgcolor: '#5e6ad2', 
+                      borderRadius: '50%', 
+                      p: 0.5,
+                      border: '2px solid #16181D'
+                    }}>
+                      <Check size={12} color="#fff" />
+                    </Box>
+                  </Box>
+                  <Typography variant="h5" fontWeight={800} sx={{ textAlign: 'center', mb: 0.5 }}>{name}</Typography>
+                  <Typography variant="caption" sx={{ color: '#5e6ad2', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {mentor.domain || 'Field Expert'}
+                  </Typography>
+                </Box>
+
+                {/* Middle: Professional Details */}
+                <CardContent sx={{ p: 4, flexGrow: 1 }}>
+                  <Stack direction="row" spacing={3} sx={{ mb: 4 }}>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" display="block" gutterBottom fontWeight={700} sx={{ textTransform: 'uppercase' }}>EXPERIENCE</Typography>
+                      <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                        <Briefcase size={16} color="#5e6ad2" />
+                        <Typography variant="body1" fontWeight={700}>{mentor.experience_years || 0} Years</Typography>
+                      </Stack>
+                    </Box>
+                    <Divider orientation="vertical" flexItem sx={{ borderColor: 'rgba(255,255,255,0.05)' }} />
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" display="block" gutterBottom fontWeight={700} sx={{ textTransform: 'uppercase' }}>MATCH REASON</Typography>
+                      <Typography variant="body2" fontWeight={500}>{mentor.explanation || 'Perfect fit for your current research goals.'}</Typography>
+                    </Box>
+                  </Stack>
+
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" display="block" gutterBottom fontWeight={700} sx={{ textTransform: 'uppercase', mb: 2 }}>TOP EXPERTISE</Typography>
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                      {skills.length > 0 ? skills.map((s, idx) => {
+                        const prof = s.proficiency || 3;
+                        const color = prof >= 4 ? '#f44336' : prof >= 3 ? '#ff9800' : '#4caf50';
+                        return (
+                          <Chip 
+                            key={`${mentorId}-${idx}`} 
+                            label={s.name || s} 
+                            size="small" 
+                            sx={{ 
+                              background: 'rgba(255,255,255,0.03)', 
+                              borderLeft: `3px solid ${color}`,
+                              borderRadius: 1.5,
+                              fontWeight: 600,
+                              height: 28
+                            }} 
+                          />
+                        );
+                      }) : <Typography variant="caption" color="text.secondary">General Academic Mentorship</Typography>}
+                    </Box>
+                  </Box>
+                </CardContent>
+
+                {/* Right: Compatibility Score & CTA */}
+                <Box sx={{ 
+                  p: 4, 
+                  minWidth: 180, 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  background: 'rgba(94, 106, 210, 0.02)',
+                  borderLeft: { md: '1px solid rgba(255,255,255,0.05)' } 
+                }}>
+                  <Box sx={{ textAlign: 'center', mb: 4 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 800, letterSpacing: '0.1em' }}>MATCH</Typography>
+                    <Typography variant="h2" fontWeight={900} sx={{ color: '#5e6ad2', lineHeight: 1 }}>{Math.round(score)}%</Typography>
+                  </Box>
+                  
+                  <Button
+                    fullWidth
+                    variant={requested[mentorId] || mentor.status === 'requested' ? 'outlined' : 'contained'}
+                    color={requested[mentorId] || mentor.status === 'requested' ? 'success' : 'primary'}
+                    disabled={requested[mentorId] || mentor.status === 'requested'}
+                    onClick={() => handleRequest(mentorId, name)}
+                    sx={{ 
+                      borderRadius: 3, 
+                      py: 1.5,
+                      fontWeight: 800,
+                      background: requested[mentorId] || mentor.status === 'requested' ? 'transparent' : 'linear-gradient(135deg, #5e6ad2 0%, #4b55c4 100%)',
+                      boxShadow: requested[mentorId] || mentor.status === 'requested' ? 'none' : '0 8px 20px rgba(94, 106, 210, 0.2)'
+                    }}
+                  >
+                    {requested[mentorId] || mentor.status === 'requested' ? 'REQUESTED' : 'CONNECT'}
+                  </Button>
+                </Box>
+              </Card>
+            </Grid>
+          );
+        })}
+      </Grid>
+
+      <Snackbar open={snack.open} autoHideDuration={4000} onClose={() => setSnack({ open: false, msg: '', severity: 'success' })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+        <Alert severity={snack.severity} variant="filled" onClose={() => setSnack({ open: false, msg: '', severity: 'success' })}>
+          {typeof snack.msg === 'object' ? JSON.stringify(snack.msg) : String(snack.msg)}
+        </Alert>
+      </Snackbar>
+    </Box>
+  );
+};
+
+export default Mentors;

@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  client:
+    build:
+      context: ./client
+    ports:
+      - "5173:80"
+    depends_on:
+      - server
+    environment:
+      - VITE_API_URL=http://localhost:5002/api
+
+  server:
+    build:
+      context: ./server
+    ports:
+      - "5002:5002"
+    depends_on:
+      - ml-service
+    env_file:
+      - .env
+    volumes:
+      - ./server/database:/app/database # Persist SQLite database
+
+  ml-service:
+    build:
+      context: ./ml-service
+    ports:
+      - "5001:5001"
+    environment:
+      - PORT=5001
+      - FLASK_ENV=production
