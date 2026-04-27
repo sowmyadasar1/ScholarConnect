@@ -13,5 +13,6 @@ router.use(authenticate);
 router.get('/sent', RequestController.getSentRequests);
 router.get('/received', RequestController.getReceivedRequests);
 router.put('/:id/respond', RequestController.respondToRequest);
+router.delete('/:id', RequestController.cancelRequest);
 
 module.exports = router;

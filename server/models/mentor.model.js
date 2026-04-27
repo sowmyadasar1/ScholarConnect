@@ -92,8 +92,18 @@ const MentorModel = {
 
     if (!matches || matches.length === 0) return;
 
+    // Get mentors already in requested/accepted state to avoid duplicates
+    const [existingRows] = await pool.query(
+      "SELECT mentor_id FROM mentor_matches WHERE user_id = ? AND status IN ('requested', 'accepted')",
+      [userId]
+    );
+    const excludeIds = new Set(existingRows.map(r => r.mentor_id));
+
     // Insert one at a time (SQLite doesn't support bulk VALUES ? syntax)
     for (const m of matches) {
+      // Skip mentors the user has already requested or been matched with
+      if (excludeIds.has(m.mentor_id)) continue;
+
       await pool.query(
         `INSERT INTO mentor_matches (user_id, mentor_id, compatibility_score, skill_match_score, domain_match_score, experience_score, availability_score, explanation, status)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'suggested')`,
@@ -121,9 +131,14 @@ const MentorModel = {
   },
 
   async requestMentor(userId, mentorId) {
-    // SQLite: use datetime('now') instead of NOW()
+    // SQLite-compatible UPSERT for mentor_matches
+    // This allows users to request mentors even if they weren't in the initial suggestion list
     await pool.query(
-      "UPDATE mentor_matches SET status = 'requested', requested_at = datetime('now') WHERE user_id = ? AND mentor_id = ?",
+      `INSERT INTO mentor_matches (user_id, mentor_id, status, requested_at, compatibility_score)
+       VALUES (?, ?, 'requested', datetime('now'), 0.5)
+       ON CONFLICT(user_id, mentor_id) DO UPDATE SET
+       status = 'requested',
+       requested_at = datetime('now')`,
       [userId, mentorId]
     );
   },

@@ -5,6 +5,7 @@ import {
   useTheme, alpha
 } from '@mui/material';
 import { Layers, AlertCircle, UserPlus, Mail, Users, CheckCircle2 } from 'lucide-react';
+import VerifiedBadge from '../components/common/VerifiedBadge';
 import { useOutletContext } from 'react-router-dom';
 import { teamService } from '../services/teamService';
 
@@ -33,7 +34,7 @@ const Teammates = () => {
       let data;
       if (searchQuery) {
         const { authService } = await import('../services/authService');
-        const searchResult = await authService.searchUsers(searchQuery);
+        const searchResult = await authService.searchUsers(searchQuery, 'teammate');
         data = (searchResult.users || []).map(u => ({
           ...u,
           suggested_user_id: u.id,
@@ -79,12 +80,6 @@ const Teammates = () => {
 
   return (
     <Box>
-      <Box sx={{ mb: 5 }}>
-        <Typography variant="h3" fontWeight={800} gutterBottom>Suggested Teammates</Typography>
-        <Typography variant="body1" color="text.secondary">
-          ML-powered recommendations based on complementary skill sets and research interests.
-        </Typography>
-      </Box>
 
       {error && (
         <Alert 
@@ -118,7 +113,17 @@ const Teammates = () => {
           const id = teammate.suggested_user_id || teammate.id;
           const score = teammate.compatibility_score || 0;
           const name = teammate.name || 'Scholar';
-          const skills = Array.isArray(teammate.skills) ? teammate.skills : [];
+          
+          let skills = [];
+          if (Array.isArray(teammate.skills)) {
+            skills = teammate.skills;
+          } else if (typeof teammate.skills === 'string') {
+            try {
+              skills = JSON.parse(teammate.skills);
+            } catch (e) {
+              skills = teammate.skills.split(',').map(s => s.trim());
+            }
+          }
 
           return (
             <Grid item xs={12} lg={6} key={id}>
@@ -140,7 +145,10 @@ const Teammates = () => {
                         {name[0]}
                       </Avatar>
                       <Box>
-                        <Typography variant="h5" fontWeight={700}>{name}</Typography>
+                        <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
+                          <Typography variant="h5" fontWeight={700}>{name}</Typography>
+                          <VerifiedBadge size="sm" label="Verified Scholar" />
+                        </Stack>
                         <Typography variant="body2" color="text.secondary">
                           {teammate.preferred_role || 'Researcher'} • {teammate.academic_level || 'Postgraduate'}
                         </Typography>
@@ -203,7 +211,7 @@ const Teammates = () => {
                         ))
                       ) : (
                         <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                          Expertise data unavailable
+                          Generalist Researcher
                         </Typography>
                       )}
                     </Stack>
@@ -225,10 +233,9 @@ const Teammates = () => {
                   </Box>
 
                   <Button 
-                    variant={invited[id] ? 'contained' : 'contained'}
-                    disabled={invited[id]}
                     fullWidth 
-                    size="large"
+                    variant="contained" 
+                    disabled={invited[id]}
                     startIcon={invited[id] ? <CheckCircle2 size={18} /> : <Mail size={18} />}
                     onClick={() => handleInvite(id, name)}
                     sx={{ 

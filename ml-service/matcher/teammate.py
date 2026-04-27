@@ -7,72 +7,73 @@ def match_teammates(user_profile, candidates):
     suggestions = []
     
     user_skills = {s['name'].lower() for s in user_profile.get('skills', [])}
-    user_role = user_profile.get('preferred_role', '')
+    user_role = user_profile.get('preferred_role', '').lower()
     user_interests = [i.lower() for i in user_profile.get('interests', [])]
+    user_availability = user_profile.get('availability', '').lower()
     
     for cand in candidates:
         cand_skill_objs = cand.get('skills', [])
         cand_skills = {s['name'].lower() for s in cand_skill_objs}
-        cand_role = cand.get('preferred_role', 'Researcher')
+        cand_role = cand.get('preferred_role', '').lower()
         cand_interests = [i.lower() for i in cand.get('interests', [])]
+        cand_level = cand.get('academic_level', 'B.Tech 1st Year')
         
-        # 1. Complementarity: We want different skills that are useful together
+        # 1. Skill Overlap (35%)
+        overlap_skills = cand_skills.intersection(user_skills)
+        overlap_score = (len(overlap_skills) / max(len(user_skills), 1)) if user_skills else 0.5
+        
+        # 2. Complementary Skills (25%)
+        # Skills candidate has that user doesn't
         unique_to_cand = cand_skills - user_skills
-        unique_list = [s['name'] for s in cand_skill_objs if s['name'].lower() in unique_to_cand]
+        complementary_score = (len(unique_to_cand) / max(len(cand_skills), 1)) if cand_skills else 0.4
         
-        if len(cand_skills) > 0:
-            comp_score = min(1.0, len(unique_to_cand) / float(len(cand_skills)))
-        else:
-            comp_score = 0.0
-            
-        # 2. Role Fit
+        # 3. Role Fit (20%)
+        # Different roles complement each other
+        role_score = 0.5
         if user_role and cand_role and user_role != cand_role:
             role_score = 1.0
-        else:
-            role_score = 0.5
+        elif not user_role or not cand_role:
+            role_score = 0.7
             
-        # 3. Domain/Interest Compatibility
-        domain_score = 0.5
-        if user_interests and cand_interests:
-            overlap = set(user_interests).intersection(set(cand_interests))
-            if overlap:
-                domain_score = 1.0 + (len(overlap) * 0.1)
-                domain_score = min(1.0, domain_score)
-            
-        total_score = (comp_score * 0.5) + (role_score * 0.3) + (domain_score * 0.2)
-        total_score *= 100
+        # 4. Shared Interests (10%)
+        shared_interests = set(user_interests).intersection(set(cand_interests))
+        interest_score = (len(shared_interests) / max(len(user_interests), 1)) if user_interests else 0.5
         
-        explanation = []
-        if role_score == 1.0:
-            if cand_role == 'Frontend Developer' and 'Backend' in user_role:
-                explanation.append(f"Ideal frontend partner to bring your backend systems to life.")
-            elif cand_role == 'Data Scientist' and 'Developer' in user_role:
-                explanation.append(f"Provides the analytical depth needed for your implementation.")
-            elif 'Designer' in cand_role:
-                explanation.append(f"Can transform your technical logic into a beautiful user experience.")
-            else:
-                explanation.append(f"A perfect {cand_role} to balance your {user_role} expertise.")
+        # 5. Experience/Academic Level Compatibility (10%)
+        level_map = {
+            'B.Tech 1st Year': 1, 'B.Tech 2nd Year': 2, 'B.Tech 3rd Year': 3, 
+            'B.Tech 4th Year': 4, 'M.Tech / Masters': 5, 'PhD Scholar': 6, 'Faculty': 7
+        }
+        user_level_val = level_map.get(user_profile.get('academic_level', 'B.Tech 1st Year'), 2)
+        cand_level_val = level_map.get(cand_level, 2)
+        exp_score = max(0, 1 - (abs(user_level_val - cand_level_val) / 5.0))
+
+        # Final Formula: 35% Overlap + 25% Complementary + 20% Role + 10% Interest + 10% Experience
+        total_score = round(((overlap_score * 0.35) + (complementary_score * 0.25) + (role_score * 0.20) + (interest_score * 0.10) + (exp_score * 0.10)) * 100, 2)
         
-        if unique_list:
-            comp_skills_str = ", ".join(unique_list[:2])
-            if comp_score > 0.8:
-                explanation.append(f"Brings a completely fresh tech stack including {comp_skills_str}.")
-            else:
-                explanation.append(f"Can contribute expertise in {comp_skills_str} which complements your profile.")
-                
-        if domain_score > 0.8:
-            explanation.append("Shares similar research interests and domain focus.")
+        # Build Explanation
+        reasoning = f"{total_score}% match — "
+        reasons = []
+        if overlap_skills:
+            reasons.append(f"shared foundation in {list(overlap_skills)[0].title()}")
+        if unique_to_cand:
+            reasons.append(f"complements your gaps with {list(unique_to_cand)[0].title()}")
+        if role_score > 0.8:
+            reasons.append(f"perfectly balances your {user_role} role as a {cand_role}")
             
+        final_explanation = reasoning + (" and ".join(reasons) if reasons else "balanced profile for your squad.")
+
         suggestions.append({
             "suggested_user_id": cand['id'],
             "name": cand.get('name', 'Scholar'),
             "avatar_url": cand.get('avatar_url', ''),
-            "preferred_role": cand_role,
-            "academic_level": cand.get('academic_level', 'Student'),
-            "compatibility_score": round(total_score, 2),
+            "preferred_role": cand.get('preferred_role', 'Researcher'),
+            "academic_level": cand_level,
+            "compatibility_score": total_score,
             "expertise": ", ".join([s['name'] for s in cand_skill_objs[:3]]),
-            "complementary_skills": unique_list[:3],
-            "explanation": " ".join(explanation) if explanation else f"Strong potential collaborator with experience in {cand_role}."
+            "complementary_skills": list(unique_to_cand)[:3],
+            "overlap_skills": list(overlap_skills)[:3],
+            "explanation": final_explanation
         })
         
     suggestions.sort(key=lambda x: x['compatibility_score'], reverse=True)

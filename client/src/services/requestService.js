@@ -27,4 +27,13 @@ export const requestService = {
     const response = await api.put(`/requests/${requestId}/respond`, { request_type: requestType, status });
     return response.data;
   },
+  
+  /**
+   * Cancel a sent request or invite.
+   * Route: DELETE /api/requests/:id
+   */
+  cancelRequest: async (requestId, requestType) => {
+    const response = await api.delete(`/requests/${requestId}?type=${requestType}`);
+    return response.data;
+  }
 };

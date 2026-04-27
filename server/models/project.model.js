@@ -217,7 +217,7 @@ const ProjectModel = {
 
   async checkApplication(projectId, userId) {
     const [rows] = await pool.query(
-      'SELECT * FROM collaboration_requests WHERE collab_project_id = ? AND requester_id = ?',
+      'SELECT * FROM collaboration_requests WHERE collab_project_id = ? AND user_id = ?',
       [projectId, userId]
     );
     return rows[0] || null;

@@ -20,15 +20,18 @@ const AdminController = {
    */
   async getStats(req, res, next) {
     try {
-      const [[{ userCount }]] = await pool.query('SELECT COUNT(*) as userCount FROM users');
-      const [[{ projectCount }]] = await pool.query('SELECT COUNT(*) as projectCount FROM projects WHERE is_active = 1');
-      const [[{ mentorCount }]] = await pool.query('SELECT COUNT(*) as mentorCount FROM mentors WHERE is_approved = 1');
-      const [[{ pendingMentors }]] = await pool.query('SELECT COUNT(*) as pendingMentors FROM mentors WHERE is_approved = 0');
-      const [[{ teamCount }]] = await pool.query('SELECT COUNT(*) as teamCount FROM teams');
-      const [[{ feedbackCount }]] = await pool.query('SELECT COUNT(*) as feedbackCount FROM feedback');
-
+      const [uRows] = await pool.query('SELECT COUNT(*) as total_users FROM users');
+      const [pRows] = await pool.query('SELECT COUNT(*) as active_projects FROM projects WHERE is_active = 1');
+      const [mRows] = await pool.query('SELECT COUNT(*) as approved_mentors FROM mentors WHERE is_approved = 1');
+      const [pmRows] = await pool.query('SELECT COUNT(*) as pending_mentors FROM mentors WHERE is_approved = 0');
+      const [tRows] = await pool.query('SELECT COUNT(*) as team_count FROM teams');
+      
       res.json({
-        stats: { userCount, projectCount, mentorCount, pendingMentors, teamCount, feedbackCount },
+        total_users: uRows[0]?.total_users || 0, 
+        active_projects: pRows[0]?.active_projects || 0, 
+        approved_mentors: mRows[0]?.approved_mentors || 0, 
+        pending_mentors: pmRows[0]?.pending_mentors || 0, 
+        team_count: tRows[0]?.team_count || 0 
       });
     } catch (err) {
       next(err);
@@ -111,8 +114,12 @@ const AdminController = {
    */
   async pendingMentors(req, res, next) {
     try {
-      const mentors = await MentorModel.findAll({ approved: false });
-      res.json({ mentors });
+      const [rows] = await pool.query(
+        `SELECT m.*, u.name, u.email, u.academic_level, u.bio
+         FROM mentors m JOIN users u ON m.user_id = u.id
+         WHERE m.is_approved = 0`
+      );
+      res.json({ mentors: rows });
     } catch (err) {
       next(err);
     }
@@ -156,6 +163,20 @@ const AdminController = {
         limit: parseInt(limit) || 20,
       });
       res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * PUT /api/admin/users/:id/role
+   */
+  async updateUserRole(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { is_admin } = req.body;
+      await UserModel.setAdmin(id, is_admin);
+      res.json({ message: `User role updated to ${is_admin ? 'Admin' : 'User'}` });
     } catch (err) {
       next(err);
     }

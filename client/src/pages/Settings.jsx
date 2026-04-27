@@ -21,7 +21,7 @@ const PROFICIENCY_LEVELS = [
 ];
 
 const Settings = () => {
-  const { user, syncGitHub, updateProfile, logout } = useAuth();
+  const { user, syncGitHub, updateProfile, logout, deleteAccount } = useAuth();
 
   const [editMode, setEditMode] = useState(false);
   const [repoDialogOpen, setRepoDialogOpen] = useState(false);
@@ -158,9 +158,19 @@ const Settings = () => {
   const handleEditSkill = (skill) => {
     setSkillInput(skill.name);
     setSelectedProficiency(skill.proficiency);
-    // Note: In a full implementation, we'd handle updating an existing ID
-    // For now, removing and re-adding is a clean fallback that works with current API
     handleDeleteSkill(skill.id);
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      await deleteAccount();
+      showSnack('Account deleted successfully. Redirecting...');
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 1500);
+    } catch (err) {
+      showSnack('Failed to delete account.', 'error');
+    }
   };
 
   if (!user) return null;
@@ -235,7 +245,7 @@ const Settings = () => {
                   )}
                 </Grid>
                 
-                <Grid item xs={12} md={6}>
+                <Grid xs={12} md={6}>
                   <Typography variant="subtitle2" gutterBottom fontWeight={600} color="text.secondary">Academic Level</Typography>
                   {editMode ? (
                     <TextField 
@@ -259,7 +269,7 @@ const Settings = () => {
                   )}
                 </Grid>
 
-                <Grid item xs={12} md={6}>
+                <Grid xs={12} md={6}>
                   <Typography variant="subtitle2" gutterBottom fontWeight={600} color="text.secondary">Preferred Role</Typography>
                   {editMode ? (
                     <TextField 
@@ -475,6 +485,29 @@ const Settings = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Danger Zone */}
+      <Card sx={{ mt: 4, background: '#16181D', border: '1px solid rgba(244, 67, 54, 0.2)', borderRadius: 4 }}>
+        <CardContent sx={{ p: 4 }}>
+          <Typography variant="h6" fontWeight={700} color="error" gutterBottom>Danger Zone</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Permanently delete your account and all associated research data. This action is irreversible.
+          </Typography>
+          <Button 
+            variant="outlined" 
+            color="error" 
+            startIcon={<Trash2 size={18} />}
+            onClick={() => {
+              if (window.confirm('Are you absolutely sure? This will delete all your projects, skills, and mentor profile data.')) {
+                handleDeleteAccount();
+              }
+            }}
+            sx={{ borderRadius: 2.5, px: 3, borderColor: 'rgba(244, 67, 54, 0.3)' }}
+          >
+            Delete Account
+          </Button>
+        </CardContent>
+      </Card>
 
       <Snackbar 
         open={snack.open} 

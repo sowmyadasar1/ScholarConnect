@@ -15,7 +15,7 @@ const FeedbackController = {
    */
   async submit(req, res, next) {
     try {
-      const { target_type, target_id, rating, comment } = req.body;
+      const { target_type, target_id, rating, comment, tags } = req.body;
 
       const validTypes = ['project_recommendation', 'mentor_match', 'teammate_suggestion'];
       if (!validTypes.includes(target_type)) {
@@ -31,6 +31,7 @@ const FeedbackController = {
         target_id,
         rating,
         comment,
+        tags: tags || []
       });
 
       res.status(201).json({ message: 'Feedback submitted. Thank you!' });

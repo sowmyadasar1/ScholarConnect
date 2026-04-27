@@ -86,13 +86,19 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem('token');
     setUser(null);
+    window.location.href = '/login';
+  };
+
+  const deleteAccount = async () => {
+    await api.delete('/auth/profile');
+    logout();
   };
 
   return (
     <AuthContext.Provider value={{
       user, loading,
       register, loginWithEmail, loginWithGitHub,
-      syncGitHub, updateProfile, addSkills, logout
+      syncGitHub, updateProfile, addSkills, logout, deleteAccount
     }}>
       {children}
     </AuthContext.Provider>

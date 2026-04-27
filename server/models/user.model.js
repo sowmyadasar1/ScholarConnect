@@ -17,8 +17,12 @@ const UserModel = {
       [id]
     );
     const user = rows[0] || null;
-    if (user && user.github_access_token) {
-      user.github_access_token = decrypt(user.github_access_token);
+    if (user) {
+      if (user.github_access_token) {
+        user.github_access_token = decrypt(user.github_access_token);
+      }
+      user.skills = await this.getSkills(id);
+      user.interests = await this.getInterests(id);
     }
     return user;
   },
@@ -26,8 +30,12 @@ const UserModel = {
   async findByEmail(email) {
     const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
     const user = rows[0] || null;
-    if (user && user.github_access_token) {
-      user.github_access_token = decrypt(user.github_access_token);
+    if (user) {
+      if (user.github_access_token) {
+        user.github_access_token = decrypt(user.github_access_token);
+      }
+      user.skills = await this.getSkills(user.id);
+      user.interests = await this.getInterests(user.id);
     }
     return user;
   },
@@ -81,6 +89,10 @@ const UserModel = {
     await pool.query('UPDATE users SET github_access_token = ? WHERE id = ?', [encryptedToken, id]);
   },
 
+  async setAdmin(id, isAdmin) {
+    await pool.query('UPDATE users SET is_admin = ? WHERE id = ?', [isAdmin ? 1 : 0, id]);
+  },
+
   // ----------- Skills (convenience joins) -----------
 
   async getSkills(userId) {
@@ -111,19 +123,38 @@ const UserModel = {
       'SELECT id, email, name, academic_level, preferred_role, is_admin, created_at FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?',
       [limit, offset]
     );
-    const [[{ total }]] = await pool.query('SELECT COUNT(*) as total FROM users');
+    const [countRows] = await pool.query('SELECT COUNT(*) as total FROM users');
+    const total = countRows[0]?.total || 0;
     return { users: rows, total, page, limit };
   },
 
-  async search(query, limit = 10) {
+  async search(query, filters = {}, limit = 10) {
     const pattern = `%${query}%`;
-    const [rows] = await pool.query(
-      `SELECT id, name, avatar_url, bio, academic_level, preferred_role
-       FROM users
-       WHERE name LIKE ? OR bio LIKE ? OR preferred_role LIKE ? OR academic_level LIKE ?
-       LIMIT ?`,
-      [pattern, pattern, pattern, pattern, limit]
-    );
+    let sql = `
+      SELECT u.id, u.name, u.avatar_url, u.bio, u.academic_level, u.preferred_role
+      FROM users u
+    `;
+    const params = [pattern, pattern, pattern, pattern];
+
+    if (filters.role === 'mentor') {
+      sql += ` JOIN mentors m ON u.id = m.user_id `;
+    } else if (filters.role === 'teammate') {
+      // Exclude users who are registered as mentors to keep search contextual
+      sql += ` LEFT JOIN mentors m ON u.id = m.user_id `;
+    }
+
+    sql += `
+      WHERE (u.name LIKE ? OR u.bio LIKE ? OR u.preferred_role LIKE ? OR u.academic_level LIKE ?)
+    `;
+
+    if (filters.role === 'teammate') {
+       sql += ` AND m.id IS NULL `;
+    }
+
+    sql += ` LIMIT ? `;
+    params.push(limit);
+
+    const [rows] = await pool.query(sql, params);
     return rows;
   },
 

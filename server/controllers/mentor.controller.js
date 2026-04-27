@@ -8,7 +8,9 @@
 const MentorModel = require('../models/mentor.model');
 const UserModel = require('../models/user.model');
 const SkillModel = require('../models/skill.model');
+const { pool } = require('../config/db');
 const mlClient = require('../utils/mlClient');
+const NotificationModel = require('../models/notification.model');
 const { AppError } = require('../middleware/errorHandler');
 
 const MentorController = {
@@ -129,13 +131,63 @@ const MentorController = {
         console.error('ML Matcher failed, using basic fallback');
       }
 
-      // If ML failed or returned nothing, create basic matches from all approved mentors
+      // If ML failed or returned nothing, create real matches from all approved mentors
       if (!mlResult.matches || mlResult.matches.length === 0) {
-        mlResult.matches = mentors.map(m => ({
-          mentor_id: m.id,
-          compatibility_score: 0.5, // Default mid-score for discovery
-          explanation: `Suggested based on your academic level and mentor's expertise in ${m.domain}.`
-        }));
+        const userInterests = await UserModel.getInterests(userId);
+        const proficiencyMap = { 'Beginner': 1, 'Intermediate': 3, 'Advanced': 5 };
+        
+        mlResult.matches = mentorsWithSkills.map(m => {
+          // 1. Skill Score (0.4)
+          // Compare user skill proficiencies with mentor skill proficiencies
+          let totalUserProficiency = 0;
+          let matchedProficiency = 0;
+          
+          userSkills.forEach(us => {
+            const up = proficiencyMap[us.proficiency] || 3;
+            totalUserProficiency += up;
+            const ms = m.skills.find(s => s.name.toLowerCase() === us.name.toLowerCase());
+            if (ms) {
+              // Score is higher if mentor is more proficient than user
+              matchedProficiency += Math.min(ms.proficiency, up + 1); 
+            }
+          });
+
+          const skillScore = totalUserProficiency > 0 ? (matchedProficiency / totalUserProficiency) : 0.5;
+
+          // 2. Domain Match (0.3)
+          const isExactDomain = userInterests.some(i => i.toLowerCase() === m.domain?.toLowerCase());
+          const domainMatch = isExactDomain ? 1.0 : 0.3;
+
+          // 3. Experience Score (0.2)
+          const expScore = Math.min(m.experience_years / 10, 1.0);
+
+          // 4. Availability Score (0.1)
+          const availScore = m.max_mentees > 0 ? (1 - (m.current_mentees / m.max_mentees)) : 0.5;
+
+          const finalScore = (skillScore * 0.4) + (domainMatch * 0.3) + (expScore * 0.2) + (availScore * 0.1);
+
+          // Construct premium explanation
+          const shared = userSkills.filter(us => m.skills.some(ms => ms.name.toLowerCase() === us.name.toLowerCase()));
+          let explanation = `Matched based on your background in ${m.domain}.`;
+          
+          if (shared.length > 0) {
+            explanation = `Shares expertise in ${shared.slice(0, 2).map(s => s.name).join(', ')}. Perfect for deep-diving into ${m.domain} implementation.`;
+          } else if (isExactDomain) {
+            explanation = `Direct match for your interest in ${m.domain} with ${m.experience_years} years of experience.`;
+          } else if (m.experience_years > 8) {
+            explanation = `Senior mentor with extensive experience in ${m.domain}, offering high-level architectural guidance.`;
+          }
+
+          return {
+            mentor_id: m.id,
+            compatibility_score: finalScore,
+            skill_match_score: skillScore,
+            domain_match_score: domainMatch,
+            experience_score: expScore,
+            availability_score: availScore,
+            explanation
+          };
+        }).sort((a, b) => b.compatibility_score - a.compatibility_score);
       }
 
       if (mlResult.matches && mlResult.matches.length > 0) {
@@ -195,6 +247,20 @@ const MentorController = {
       }
 
       await MentorModel.requestMentor(userId, mentorId);
+
+      // Notify mentor
+      const mentor = await MentorModel.findById(mentorId);
+      if (mentor) {
+        await NotificationModel.create({
+          user_id: mentor.user_id,
+          type: 'mentor_request',
+          title: 'New Mentor Request',
+          message: `${req.user.name} has requested you as their mentor.`,
+          reference_type: 'mentor_match',
+          reference_id: mentorId
+        });
+      }
+
       res.json({ message: 'Mentor request sent successfully.' });
     } catch (err) {
       next(err);
@@ -215,6 +281,22 @@ const MentorController = {
       }
 
       await MentorModel.respondToRequest(matchId, status);
+
+      // Notify user
+      const [matchRows] = await pool.query('SELECT user_id, mentor_id FROM mentor_matches WHERE id = ?', [matchId]);
+      const match = matchRows[0];
+      if (match) {
+        const mentor = await MentorModel.findById(match.mentor_id);
+        await NotificationModel.create({
+          user_id: match.user_id,
+          type: `mentor_${status}`,
+          title: `Mentor Request ${status === 'accepted' ? 'Accepted' : 'Rejected'}`,
+          message: `${mentor.name} has ${status} your request for mentorship.`,
+          reference_type: 'mentor_match',
+          reference_id: matchId
+        });
+      }
+
       res.json({ message: `Request ${status}.` });
     } catch (err) {
       next(err);

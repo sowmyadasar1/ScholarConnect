@@ -70,8 +70,8 @@ export const authService = {
   /**
    * Search for users/mentors
    */
-  async searchUsers(query) {
-    const { data } = await api.get(`/auth/users/search?q=${encodeURIComponent(query)}`);
+  async searchUsers(query, role = '') {
+    const { data } = await api.get(`/auth/users/search?q=${encodeURIComponent(query)}&role=${role}`);
     return data;
   },
   

@@ -32,14 +32,14 @@ const NotificationModel = {
   },
 
   /**
-   * Get unread count for a user.
+   * Get unread count for a user (safe destructuring).
    */
   async getUnreadCount(userId) {
-    const [[{ count }]] = await pool.query(
+    const [rows] = await pool.query(
       'SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = 0',
       [userId]
     );
-    return count;
+    return rows[0]?.count || 0;
   },
 
   /**

@@ -47,16 +47,17 @@ async function initDb() {
     // Insert mock data if empty
     const userCount = await db.get('SELECT COUNT(*) as count FROM users');
     if (userCount.count === 0) {
-      console.log('🌱 Seeding database with Indian Academic dataset...');
+      console.log('🌱 Seeding database with High-Fidelity Indian Academic dataset...');
       
       // 1. Users
       const users = [
-        ['admin@scholarconnect.io', 'Platform Admin', 'Faculty', 1, 'Mentor & Administrator at IIT Madras.'],
-        ['arjun.mehta@iitb.ac.in', 'Arjun Mehta', 'B.Tech 3rd Year', 0, 'Full-stack developer at IIT Bombay. Passionate about Web3.'],
-        ['priya.sharma@nitt.edu', 'Priya Sharma', 'M.Tech / Masters', 0, 'Research scholar at NIT Trichy specializing in AI/ML.'],
-        ['rahul.nair@bits-pilani.ac.in', 'Rahul Nair', 'B.Tech 4th Year', 0, 'Embedded systems enthusiast from BITS Pilani.'],
-        ['sowmya.d@vit.ac.in', 'Sowmya Dasari', 'B.Tech 2nd Year', 0, 'Frontend developer and UI designer from VIT. Interested in React.'],
-        ['vikram.kumar@iitd.ac.in', 'Vikram Kumar', 'PhD Scholar', 0, 'Deep Learning researcher at IIT Delhi. Seeking collaborators for NLP projects.']
+        ['admin@scholarconnect.io', 'Platform Admin', 'Faculty', 1, 'Mentor & Administrator. Researching Distributed Systems at IIT Madras.'],
+        ['arjun.mehta@iitb.ac.in', 'Arjun Mehta', 'B.Tech 4th Year', 0, 'Full-stack developer at IIT Bombay. Passionate about Blockchain and scalable web architectures.'],
+        ['ananya.iyer@iisc.ac.in', 'Ananya Iyer', 'PhD Scholar', 0, 'Researching Privacy-Preserving ML at IISc Bangalore. Expert in PyTorch and Federated Learning.'],
+        ['karthik.raja@annauniv.edu', 'Karthik Raja', 'B.Tech 3rd Year', 0, 'Frontend enthusiast from Anna University. Specialist in React, Three.js, and immersive UI.'],
+        ['deepika.reddy@iith.ac.in', 'Deepika Reddy', 'M.Tech / Masters', 0, 'Data Scientist at IIT Hyderabad focusing on Healthcare Informatics and NLP.'],
+        ['rohan.gupta@bits-pilani.ac.in', 'Rohan Gupta', 'B.Tech 4th Year', 0, 'Cloud Infrastructure and DevOps specialist from BITS Pilani. Docker and K8s expert.'],
+        ['isha.sharma@nith.ac.in', 'Isha Sharma', 'B.Tech 2nd Year', 0, 'Aspiring UI/UX designer and Frontend developer from NIT Hamirpur. Love creating clean interfaces.']
       ];
 
       for (const u of users) {
@@ -68,27 +69,35 @@ async function initDb() {
 
       // 2. Skills
       const skills = [
-        ['Python', 'language'], ['Javascript', 'language'], ['React', 'framework'], 
-        ['Node.js', 'framework'], ['Machine Learning', 'domain'], ['Deep Learning', 'domain'],
-        ['PostgreSQL', 'database'], ['Docker', 'devops'], ['Solidity', 'language']
+        ['Python', 'language'], ['Javascript', 'language'], ['TypeScript', 'language'],
+        ['React', 'framework'], ['Next.js', 'framework'], ['Node.js', 'framework'], 
+        ['PyTorch', 'framework'], ['TensorFlow', 'framework'],
+        ['PostgreSQL', 'database'], ['MongoDB', 'database'], ['Redis', 'database'],
+        ['Docker', 'devops'], ['Kubernetes', 'devops'], ['AWS', 'devops'],
+        ['Solidity', 'language'], ['Blockchain', 'domain'], ['NLP', 'domain'],
+        ['Federated Learning', 'domain'], ['Healthcare IT', 'domain']
       ];
       for (const s of skills) {
         await db.run('INSERT INTO skills (name, category) VALUES (?, ?)', s);
       }
 
       // 3. User Skills (Connect users to skills)
-      // Arjun (IITB) - React, Javascript, Node.js
-      await db.run('INSERT INTO user_skills (user_id, skill_id, proficiency, source) VALUES (2, 2, 5, "manual"), (2, 3, 4, "manual"), (2, 4, 3, "manual")');
-      // Priya (NITT) - Python, Machine Learning, Deep Learning
-      await db.run('INSERT INTO user_skills (user_id, skill_id, proficiency, source) VALUES (3, 1, 5, "manual"), (3, 5, 5, "manual"), (3, 6, 4, "manual")');
-      // Rahul (BITS) - Python, Docker
-      await db.run('INSERT INTO user_skills (user_id, skill_id, proficiency, source) VALUES (4, 1, 4, "manual"), (4, 8, 4, "manual")');
+      // Arjun (IITB) - Blockchain, Node.js, React
+      await db.run('INSERT INTO user_skills (user_id, skill_id, proficiency, source) VALUES (2, 16, "Advanced", "manual"), (2, 6, "Intermediate", "manual"), (2, 4, "Intermediate", "manual")');
+      // Ananya (IISc) - PyTorch, Federated Learning, Python
+      await db.run('INSERT INTO user_skills (user_id, skill_id, proficiency, source) VALUES (3, 7, "Advanced", "manual"), (3, 18, "Advanced", "manual"), (3, 1, "Advanced", "manual")');
+      // Karthik (Anna Univ) - React, TypeScript, Next.js
+      await db.run('INSERT INTO user_skills (user_id, skill_id, proficiency, source) VALUES (4, 4, "Advanced", "manual"), (4, 3, "Intermediate", "manual"), (4, 5, "Intermediate", "manual")');
+      // Deepika (IITH) - NLP, Python, Healthcare IT
+      await db.run('INSERT INTO user_skills (user_id, skill_id, proficiency, source) VALUES (5, 17, "Advanced", "manual"), (5, 1, "Advanced", "manual"), (5, 19, "Intermediate", "manual")');
 
       // 4. Projects (Catalog)
       const projects = [
-        ['Decentralized Academic Credentials', 'A blockchain-based system to verify degrees.', 4, 'blockchain', '["Solidity", "React", "Node.js"]'],
-        ['Low-Resource Language NLP', 'Building LLMs for regional Indian languages.', 5, 'ai', '["Python", "Deep Learning", "NLP"]'],
-        ['Smart Campus Energy Grid', 'IOT-based energy management for universities.', 3, 'iot', '["Python", "Docker", "PostgreSQL"]']
+        ['Decentralized Academic Credentials', 'A blockchain-based system to verify degrees securely across Indian universities.', 4, 'Blockchain', '["Solidity", "React", "Node.js"]'],
+        ['Privacy-Preserving Healthcare AI', 'Using Federated Learning to train models on medical data without compromising patient privacy.', 5, 'Artificial Intelligence', '["Python", "PyTorch", "Federated Learning"]'],
+        ['Smart Campus Energy Optimizer', 'IoT and ML based system for reducing carbon footprint in university hostels.', 3, 'IoT', '["Python", "Docker", "PostgreSQL"]'],
+        ['Low-Resource NLP for Regional Dialects', 'Building LLMs specifically for less-documented Indian regional languages.', 5, 'NLP', '["Python", "PyTorch", "NLP"]'],
+        ['Scalable E-Learning for Rural India', 'A high-performance offline-first learning platform for areas with low connectivity.', 3, 'Education', '["Next.js", "Redis", "Service Workers"]']
       ];
       for (const p of projects) {
         await db.run(
@@ -100,10 +109,10 @@ async function initDb() {
       // 5. Collaboration Hub (Active Projects)
       await db.run(`
         INSERT INTO collaboration_projects (owner_id, project_id, repo_name, description, languages, topics)
-        VALUES (2, 1, 'iitb-blockchain-credentials', 'Active implementation of blockchain credentials.', '{"Solidity": 80, "Javascript": 20}', '["blockchain", "security"]')
+        VALUES (2, 1, 'iitb-blockchain-credentials', 'Implementing the secure credentialing protocol for IIT Bombay graduates.', '{"Solidity": 70, "TypeScript": 30}', '["blockchain", "security", "academia"]')
       `);
 
-      console.log('🌱 Database seeded with high-fidelity Indian dataset!');
+      console.log('🌱 Database seeded with high-fidelity, unique Indian dataset!');
     }
 
   } catch (err) {

@@ -73,8 +73,8 @@ export const collabService = {
    * Request to join a collaboration project.
    * Route: POST /api/collab/:id/request
    */
-  requestToJoin: async (projectId, message) => {
-    const response = await api.post(`/collab/${projectId}/request`, { message });
+  requestToJoin: async (projectId, message, role) => {
+    const response = await api.post(`/collab/${projectId}/request`, { message, role });
     return response.data;
   },
 
@@ -104,8 +104,16 @@ export const collabService = {
     const response = await api.post('/collab/manual', projectData);
     return response.data;
   },
-  autoInviteRole: async (projectId, role) => {
-    const response = await api.post(`/collab/${projectId}/auto-invite`, { role });
+  autoInviteRole: async (projectId, userIds, role) => {
+    const response = await api.post(`/collab/${projectId}/auto-invite`, { userIds, role });
+    return response.data;
+  },
+  getSmartSuggestions: async (projectId) => {
+    const response = await api.get(`/collab/${projectId}/smart-suggestions`);
+    return response.data;
+  },
+  deleteProject: async (projectId) => {
+    const response = await api.delete(`/collab/${projectId}`);
     return response.data;
   }
 };

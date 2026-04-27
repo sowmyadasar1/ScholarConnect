@@ -58,10 +58,28 @@ const AdminDashboard = () => {
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>;
 
   return (
-    <Box>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h2">Admin Dashboard</Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>Platform statistics and approval management.</Typography>
+    <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
+      <Box sx={{ mb: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <Box>
+          <Typography variant="h3" fontWeight={800} sx={{ letterSpacing: '-0.02em' }}>Platform Controls</Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>Real-time statistics and mentor oversight.</Typography>
+        </Box>
+        <Button 
+          variant="contained" 
+          onClick={() => window.location.href='/admin/users'}
+          sx={{ 
+            borderRadius: 2, 
+            px: 3, 
+            py: 1.2, 
+            fontWeight: 700,
+            background: 'rgba(255,255,255,0.05)',
+            color: '#fff',
+            border: '1px solid rgba(255,255,255,0.1)',
+            '&:hover': { background: 'rgba(255,255,255,0.1)' }
+          }}
+        >
+          Manage All Users
+        </Button>
       </Box>
 
       <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -98,8 +116,9 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
       ) : (
-        <TableContainer component={Paper} sx={{ bgcolor: 'background.paper', backgroundImage: 'none' }}>
-          <Table>
+        <TableContainer component={Paper} sx={{ bgcolor: 'background.paper', backgroundImage: 'none', borderRadius: 4, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <Box sx={{ overflowX: 'auto' }}>
+            <Table sx={{ minWidth: 650 }}>
             <TableHead sx={{ bgcolor: 'rgba(255,255,255,0.02)' }}>
               <TableRow>
                 {['Name', 'Domain', 'Experience', 'Status', 'Actions'].map(h => (
@@ -115,7 +134,7 @@ const AdminDashboard = () => {
                     <Typography variant="body2" sx={{ fontWeight: 500 }}>{row.name}</Typography>
                   </TableCell>
                   <TableCell sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{row.domain}</TableCell>
-                  <TableCell sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{row.years_experience} years</TableCell>
+                  <TableCell sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{row.experience_years || 0} years</TableCell>
                   <TableCell sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                     <Chip label="Pending" size="small" sx={{ bgcolor: 'rgba(245,166,35,0.1)', color: '#f5a623', border: '1px solid rgba(245,166,35,0.2)' }} />
                   </TableCell>
@@ -126,7 +145,8 @@ const AdminDashboard = () => {
                 </TableRow>
               ))}
             </TableBody>
-          </Table>
+            </Table>
+          </Box>
         </TableContainer>
       )}
 

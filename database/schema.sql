@@ -12,6 +12,11 @@ DROP TABLE IF EXISTS mentor_skills;
 DROP TABLE IF EXISTS mentors;
 DROP TABLE IF EXISTS team_members;
 DROP TABLE IF EXISTS teams;
+DROP TABLE IF EXISTS workspace_tasks;
+DROP TABLE IF EXISTS workspace_messages;
+DROP TABLE IF EXISTS workspace_notes;
+DROP TABLE IF EXISTS workspace_activity;
+DROP TABLE IF EXISTS connections;
 DROP TABLE IF EXISTS collaboration_requests;
 DROP TABLE IF EXISTS collaboration_projects;
 DROP TABLE IF EXISTS project_roadmaps;
@@ -152,13 +157,18 @@ CREATE TABLE collaboration_requests (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     collab_project_id INTEGER,
     user_id INTEGER, -- The person requesting to join OR being invited
-    type TEXT DEFAULT 'request', -- 'request' (user -> owner) or 'invite' (owner -> user)
+    sender_id INTEGER, -- The person who sent the invite
+    type TEXT DEFAULT 'request', -- 'request', 'invite', 'mentor_invite'
     role TEXT,
     message TEXT,
     status TEXT DEFAULT 'pending', -- 'pending', 'accepted', 'rejected'
+    expected_contribution TEXT,
+    timeline TEXT,
+    mentor_role TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (collab_project_id) REFERENCES collaboration_projects(id),
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (sender_id) REFERENCES users(id)
 );
 
 CREATE TABLE teams (
@@ -166,10 +176,12 @@ CREATE TABLE teams (
     name TEXT,
     project_id INTEGER, -- Links to projects OR collaboration_projects
     collab_project_id INTEGER,
+    mentor_match_id INTEGER,
     created_by INTEGER,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (project_id) REFERENCES projects(id),
     FOREIGN KEY (collab_project_id) REFERENCES collaboration_projects(id),
+    FOREIGN KEY (mentor_match_id) REFERENCES mentor_matches(id),
     FOREIGN KEY (created_by) REFERENCES users(id)
 );
 
@@ -222,7 +234,74 @@ CREATE TABLE mentor_matches (
     explanation TEXT,
     requested_at DATETIME,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, mentor_id),
     FOREIGN KEY (mentor_id) REFERENCES mentors(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- 6.5 Connections (Persistent Relationships)
+CREATE TABLE connections (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id_1 INTEGER,
+    user_id_2 INTEGER,
+    type TEXT DEFAULT 'teammate', -- 'teammate', 'mentor'
+    status TEXT DEFAULT 'active', -- 'active', 'archived'
+    collaboration_count INTEGER DEFAULT 1,
+    last_interacted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id_1, user_id_2, type),
+    FOREIGN KEY (user_id_1) REFERENCES users(id),
+    FOREIGN KEY (user_id_2) REFERENCES users(id)
+);
+
+-- 6.6 Workspace Components
+CREATE TABLE workspace_tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    team_id INTEGER,
+    title TEXT NOT NULL,
+    description TEXT,
+    status TEXT DEFAULT 'todo', -- 'todo', 'in_progress', 'done'
+    assigned_to INTEGER,
+    priority TEXT DEFAULT 'medium', -- 'low', 'medium', 'high'
+    created_by INTEGER,
+    due_date DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (team_id) REFERENCES teams(id),
+    FOREIGN KEY (assigned_to) REFERENCES users(id),
+    FOREIGN KEY (created_by) REFERENCES users(id)
+);
+
+CREATE TABLE workspace_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    team_id INTEGER,
+    user_id INTEGER,
+    content TEXT NOT NULL,
+    type TEXT DEFAULT 'chat', -- 'chat', 'milestone', 'system'
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (team_id) REFERENCES teams(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE workspace_notes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    team_id INTEGER,
+    user_id INTEGER,
+    title TEXT,
+    content TEXT,
+    is_pinned INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (team_id) REFERENCES teams(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE workspace_activity (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    team_id INTEGER,
+    user_id INTEGER,
+    action TEXT,
+    details TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (team_id) REFERENCES teams(id),
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
@@ -257,9 +336,13 @@ CREATE TABLE teammate_suggestions (
 CREATE TABLE feedback (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER,
+    target_type TEXT DEFAULT 'general',
+    target_id INTEGER DEFAULT 0,
     rating INTEGER,
     comment TEXT,
+    tags TEXT, -- JSON array
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, target_type, target_id),
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 

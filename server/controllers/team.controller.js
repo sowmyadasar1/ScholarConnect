@@ -199,16 +199,22 @@ const TeamController = {
    */
   async respondToInvite(req, res, next) {
     try {
-      const { status } = req.body; // 'accepted' or 'declined'
+      const { status } = req.body;
       if (!['accepted', 'declined'].includes(status)) {
         throw new AppError('Status must be "accepted" or "declined"', 400);
       }
 
+      const invite = await TeamModel.getInviteById(req.params.id);
+      if (!invite) throw new AppError('Invite not found', 404);
+
       await TeamModel.respondToInvite(req.params.id, status);
 
-      // If accepted and there's a team_id, add user to team
       if (status === 'accepted') {
-        // TODO: fetch invite, get team_id, add member
+        const [teams] = await pool.query('SELECT id FROM teams WHERE collab_project_id = ?', [invite.collab_project_id]);
+        if (teams.length > 0) {
+          const teamId = teams[0].id;
+          await TeamModel.addMember(teamId, req.user.id, invite.role || 'member');
+        }
       }
 
       res.json({ message: `Invite ${status}` });

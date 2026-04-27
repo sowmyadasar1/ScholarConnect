@@ -1,28 +1,36 @@
 import React from 'react';
-import { Box, TextField, InputAdornment, Typography, IconButton, Badge, Tooltip, Avatar } from '@mui/material';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Box, TextField, InputAdornment, IconButton, Badge, Tooltip, Avatar, Stack } from '@mui/material';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import ErrorBoundary from './ErrorBoundary';
-import { Search, Bell, Sparkles, Command } from 'lucide-react';
+import { Search, Bell, Sparkles, X, Settings } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const AppLayout = () => {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = React.useState('');
   const [aiSearchTrigger, setAiSearchTrigger] = React.useState(null);
+  const [mobileOpen, setMobileOpen] = React.useState(false);
 
-  const getPageTitle = () => {
+  // Priority 6 fix: Clear search state on route change — no cross-page leakage
+  React.useEffect(() => {
+    setSearchQuery('');
+    setAiSearchTrigger(null);
+  }, [location.pathname]);
+
+  const getContextualPlaceholder = () => {
     const path = location.pathname;
-    if (path === '/dashboard') return 'Project Discovery';
-    if (path === '/mentors') return 'Mentor Matching';
-    if (path === '/teammates') return 'Teammate Suggestions';
-    if (path === '/collaboration') return 'Collaboration Hub';
-    if (path === '/requests') return 'My Requests';
-    if (path === '/settings') return 'Profile Settings';
-    if (path === '/admin') return 'Admin Dashboard';
-    return 'ScholarConnect';
+    if (path === '/dashboard') return 'Describe a project idea or search projects...';
+    if (path === '/mentors') return 'Search mentors by name, skill, or domain...';
+    if (path === '/teammates') return 'Find teammates by skill or research area...';
+    if (path === '/collaboration') return 'Search collaboration projects...';
+    if (path === '/requests') return 'Filter requests...';
+    return 'Search ScholarConnect...';
   };
+
+  const showAiButton = location.pathname === '/dashboard';
 
   const handleAiSearch = () => {
     if (!searchQuery.trim()) return;
@@ -31,62 +39,109 @@ const AppLayout = () => {
 
   return (
     <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden', bgcolor: '#0e0f11' }}>
-      <Sidebar />
+      <Sidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
       
       <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
-        {/* Topbar */}
+        {/* Topbar — clean, centered search */}
         <Box 
           sx={{ 
             height: 72, 
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'space-between',
-            px: 4,
+            px: { xs: 2, md: 4 },
             borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
             bgcolor: '#0e0f11',
-            zIndex: 10
+            zIndex: 10,
+            position: 'relative'
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flexGrow: 1 }}>
-            <Typography variant="h6" fontWeight={800} sx={{ minWidth: 200 }}>
-              {getPageTitle()}
-            </Typography>
-            
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            edge="start"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            sx={{ mr: 2, display: { md: 'none' } }}
+          >
+            <Search size={20} />
+          </IconButton>
+          {/* Search Bar — visible on all but smallest screens */}
+          <Box sx={{ 
+            width: '100%', 
+            maxWidth: 640, 
+            position: 'relative',
+            display: { xs: 'none', sm: 'block' } 
+          }}>
             <TextField
               id="global-search-input"
               size="small"
-              placeholder="Search projects, skills, or people..."
+              placeholder={getContextualPlaceholder()}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleAiSearch()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  if (showAiButton) handleAiSearch();
+                }
+              }}
+              fullWidth
               sx={{ 
-                maxWidth: 500,
-                width: '100%',
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 3,
-                  bgcolor: 'rgba(255,255,255,0.03)',
-                  '& fieldset': { borderColor: 'rgba(255,255,255,0.05)' },
-                  '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.1)' },
+                  height: 40,
+                  bgcolor: 'rgba(255,255,255,0.04)',
+                  fontSize: '0.85rem',
+                  '& fieldset': { borderColor: 'rgba(255,255,255,0.06)' },
+                  '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.12)' },
                   '&.Mui-focused fieldset': { borderColor: '#5e6ad2' }
                 }
               }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search size={18} color="rgba(255,255,255,0.3)" />
-                  </InputAdornment>
-                ),
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <Tooltip title="AI Search (Press Enter)">
-                      <IconButton size="small" onClick={handleAiSearch} sx={{ color: '#5e6ad2' }}>
-                        <Sparkles size={16} />
-                      </IconButton>
-                    </Tooltip>
-                  </InputAdornment>
-                )
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Search size={16} color="rgba(255,255,255,0.3)" />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      {searchQuery && (
+                        <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
+                          {showAiButton && (
+                            <Tooltip title="AI Discovery">
+                              <IconButton size="small" onClick={handleAiSearch} sx={{ color: '#5e6ad2', p: 0.5 }}>
+                                <Sparkles size={15} />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                          <IconButton size="small" onClick={() => setSearchQuery('')} sx={{ color: 'text.secondary', p: 0.5 }}>
+                            <X size={14} />
+                          </IconButton>
+                        </Stack>
+                      )}
+                    </InputAdornment>
+                  )
+                }
               }}
             />
+          </Box>
+
+          {/* Right-side actions */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Tooltip title="Settings">
+              <IconButton 
+                size="small" 
+                onClick={() => navigate('/settings')}
+                sx={{ color: 'text.secondary', '&:hover': { color: '#fff' } }}
+              >
+                <Settings size={20} />
+              </IconButton>
+            </Tooltip>
+            <Avatar 
+              src={user?.avatar_url} 
+              sx={{ width: 32, height: 32, ml: 1, border: '1px solid rgba(255,255,255,0.1)', display: { xs: 'none', sm: 'flex' } }}
+            >
+              {user?.name?.[0]}
+            </Avatar>
           </Box>
         </Box>
 
@@ -94,9 +149,9 @@ const AppLayout = () => {
           component="main" 
           sx={{ 
             flexGrow: 1, 
-            p: 4, 
+            p: { xs: 2, md: 4, lg: 5 }, 
             overflowY: 'auto',
-            bgcolor: 'background.default'
+            bgcolor: '#0e0f11'
           }}
         >
           <ErrorBoundary>

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Grid, Card, CardContent, Chip, Button,
-  Avatar, Snackbar, Alert, Stack, CircularProgress, Divider
+  Avatar, Snackbar, Alert, Stack, CircularProgress, Divider, Tooltip
 } from '@mui/material';
-import { Briefcase, Star, Check, AlertCircle } from 'lucide-react';
+import { Briefcase, Star, AlertCircle } from 'lucide-react';
 import { useOutletContext } from 'react-router-dom';
 import { mentorService } from '../services/mentorService';
+import VerifiedBadge from '../components/common/VerifiedBadge';
 
 const Mentors = () => {
   const { searchQuery } = useOutletContext();
@@ -30,22 +31,18 @@ const Mentors = () => {
       
       let data;
       if (searchQuery) {
-        // Use global search if query exists
         data = await mentorService.listMentors({ search: searchQuery });
-        // Map to match structure for UI consistency
         data = data.map(m => ({
           ...m,
           mentor_id: m.id,
           mentor_name: m.name,
           mentor_avatar: m.avatar_url,
-          compatibility_score: 0, // No score for general search results
+          compatibility_score: 0,
           explanation: 'Search result'
         }));
       } else {
-        // Use personalized matches by default
         data = await mentorService.getMatches();
       }
-      // Sort by compatibility score
       data.sort((a, b) => (b.compatibility_score || 0) - (a.compatibility_score || 0));
       setMentors(data);
     } catch (err) {
@@ -71,23 +68,24 @@ const Mentors = () => {
     }
   };
 
+  const getScoreColor = (score) => {
+    if (score >= 85) return '#4caf50';
+    if (score >= 70) return '#5e6ad2';
+    if (score >= 50) return '#ff9800';
+    return '#9e9e9e';
+  };
+
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-        <CircularProgress />
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 15, gap: 2 }}>
+        <CircularProgress thickness={4} size={40} sx={{ color: '#5e6ad2' }} />
+        <Typography variant="body2" color="text.secondary">Finding your best mentor matches...</Typography>
       </Box>
     );
   }
 
   return (
     <Box>
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h2">Mentor Matches</Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-          Suggested based on your skills, domain, and experience goals.
-        </Typography>
-      </Box>
-
       {error && (
         <Alert severity="warning" sx={{ mb: 3 }} icon={<AlertCircle size={18} />}>
           {error}
@@ -108,7 +106,7 @@ const Mentors = () => {
 
       <Grid container spacing={3}>
         {mentors.map(mentor => {
-            const mentorId = mentor.mentor_id || mentor.id;
+          const mentorId = mentor.mentor_id || mentor.id;
           const score = mentor.compatibility_score || mentor.matchScore || 0;
           const name = mentor.mentor_name || mentor.name;
           const avatar = mentor.mentor_avatar || mentor.avatar_url;
@@ -149,14 +147,10 @@ const Mentors = () => {
                     </Avatar>
                     <Box sx={{ 
                       position: 'absolute', 
-                      bottom: 0, 
-                      right: 0, 
-                      bgcolor: '#5e6ad2', 
-                      borderRadius: '50%', 
-                      p: 0.5,
-                      border: '2px solid #16181D'
+                      bottom: -2, 
+                      right: -2, 
                     }}>
-                      <Check size={12} color="#fff" />
+                      <VerifiedBadge size="md" label="Verified Mentor" />
                     </Box>
                   </Box>
                   <Typography variant="h5" fontWeight={800} sx={{ textAlign: 'center', mb: 0.5 }}>{name}</Typography>
@@ -176,9 +170,11 @@ const Mentors = () => {
                       </Stack>
                     </Box>
                     <Divider orientation="vertical" flexItem sx={{ borderColor: 'rgba(255,255,255,0.05)' }} />
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" display="block" gutterBottom fontWeight={700} sx={{ textTransform: 'uppercase' }}>MATCH REASON</Typography>
-                      <Typography variant="body2" fontWeight={500}>{mentor.explanation || 'Perfect fit for your current research goals.'}</Typography>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="caption" color="text.secondary" display="block" gutterBottom fontWeight={700} sx={{ textTransform: 'uppercase' }}>WHY THIS MATCH</Typography>
+                      <Typography variant="body2" fontWeight={500} sx={{ lineHeight: 1.6 }}>
+                        {mentor.explanation || 'Qualified mentor with relevant domain experience.'}
+                      </Typography>
                     </Box>
                   </Stack>
 
@@ -220,25 +216,58 @@ const Mentors = () => {
                 }}>
                   <Box sx={{ textAlign: 'center', mb: 4 }}>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 800, letterSpacing: '0.1em' }}>MATCH</Typography>
-                    <Typography variant="h2" fontWeight={900} sx={{ color: '#5e6ad2', lineHeight: 1 }}>{Math.round(score)}%</Typography>
+                    <Typography variant="h2" fontWeight={900} sx={{ color: getScoreColor(Math.round(score)), lineHeight: 1 }}>{Math.round(score)}%</Typography>
+                    
+                    {(mentor.skill_match_score || mentor.domain_match_score) && (
+                      <Stack direction="row" spacing={1} sx={{ mt: 1, justifyContent: 'center' }}>
+                        {mentor.skill_match_score && (
+                          <Tooltip title="Skill Overlap Score">
+                            <Chip size="small" label={`S: ${Math.round(mentor.skill_match_score)}%`} sx={{ fontSize: '0.65rem', height: 20 }} />
+                          </Tooltip>
+                        )}
+                        {mentor.domain_match_score && (
+                          <Tooltip title="Domain Alignment Score">
+                            <Chip size="small" label={`D: ${Math.round(mentor.domain_match_score)}%`} sx={{ fontSize: '0.65rem', height: 20 }} />
+                          </Tooltip>
+                        )}
+                      </Stack>
+                    )}
                   </Box>
                   
-                  <Button
-                    fullWidth
-                    variant={requested[mentorId] || mentor.status === 'requested' ? 'outlined' : 'contained'}
-                    color={requested[mentorId] || mentor.status === 'requested' ? 'success' : 'primary'}
-                    disabled={requested[mentorId] || mentor.status === 'requested'}
-                    onClick={() => handleRequest(mentorId, name)}
-                    sx={{ 
-                      borderRadius: 3, 
-                      py: 1.5,
-                      fontWeight: 800,
-                      background: requested[mentorId] || mentor.status === 'requested' ? 'transparent' : 'linear-gradient(135deg, #5e6ad2 0%, #4b55c4 100%)',
-                      boxShadow: requested[mentorId] || mentor.status === 'requested' ? 'none' : '0 8px 20px rgba(94, 106, 210, 0.2)'
-                    }}
-                  >
-                    {requested[mentorId] || mentor.status === 'requested' ? 'REQUESTED' : 'CONNECT'}
-                  </Button>
+                  {(() => {
+                    const isRequested = requested[mentorId] || mentor.status === 'requested';
+                    const isAccepted = mentor.status === 'accepted';
+                    const isRejected = mentor.status === 'rejected' || mentor.status === 'declined';
+                    const isLocked = isRequested || isAccepted || isRejected;
+                    
+                    let label = 'CONNECT';
+                    let bgStyle = 'linear-gradient(135deg, #5e6ad2 0%, #4b55c4 100%)';
+                    let borderColor = 'transparent';
+                    
+                    if (isAccepted) { label = '✓ MATCHED'; bgStyle = 'transparent'; borderColor = '#4caf50'; }
+                    else if (isRequested) { label = 'REQUESTED'; bgStyle = 'transparent'; borderColor = '#f5a623'; }
+                    else if (isRejected) { label = 'UNAVAILABLE'; bgStyle = 'transparent'; borderColor = 'rgba(255,255,255,0.1)'; }
+
+                    return (
+                      <Button
+                        fullWidth
+                        variant={isLocked ? 'outlined' : 'contained'}
+                        disabled={isLocked}
+                        onClick={() => handleRequest(mentorId, name)}
+                        sx={{ 
+                          borderRadius: 3, 
+                          py: 1.5,
+                          fontWeight: 800,
+                          background: bgStyle,
+                          borderColor,
+                          boxShadow: isLocked ? 'none' : '0 8px 20px rgba(94, 106, 210, 0.2)',
+                          color: isAccepted ? '#4caf50' : isRejected ? 'text.disabled' : undefined,
+                        }}
+                      >
+                        {label}
+                      </Button>
+                    );
+                  })()}
                 </Box>
               </Card>
             </Grid>

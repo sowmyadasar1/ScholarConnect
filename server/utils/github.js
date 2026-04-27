@@ -28,6 +28,7 @@ async function fetchUserRepos(accessToken) {
       id: repo.id,
       name: repo.name,
       full_name: repo.full_name,
+      owner: { login: repo.owner.login },
       description: repo.description,
       html_url: repo.html_url,
       language: repo.language,

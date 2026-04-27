@@ -6,7 +6,7 @@ import {
 } from '@mui/material';
 import { 
   Check, X, Clock, AlertCircle, ArrowUpRight, ArrowDownLeft, 
-  MessageSquare, UserCircle, Briefcase, Users, Layout
+  MessageSquare, UserCircle, Briefcase, Users, Layout, Star
 } from 'lucide-react';
 import { requestService } from '../services/requestService';
 
@@ -21,13 +21,14 @@ const STATUS_CONFIG = {
 const TYPE_ICONS = {
   'Project': <Layout size={14} />,
   'Mentor': <UserCircle size={14} />,
-  'Team Invite': <Users size={14} />,
-  'Join Request': <Briefcase size={14} />,
-  'Mentor Request': <UserCircle size={14} />,
+  'team_invite': <Users size={14} />,
+  'mentor_invite': <Star size={14} />,
+  'collab_request': <Briefcase size={14} />,
+  'mentor_request': <UserCircle size={14} />,
 };
 
 const Requests = () => {
-  const [tab, setTab] = useState(0); // 0 = Sent, 1 = Received
+  const [tab, setTab] = useState(0); // 0 = Incoming, 1 = Sent, 2 = Mentorship
   const [sentRequests, setSentRequests] = useState([]);
   const [receivedRequests, setReceivedRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -69,14 +70,17 @@ const Requests = () => {
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
     const d = new Date(dateStr);
-    const now = new Date();
-    const diffMs = now - d;
-    const diffH = Math.floor(diffMs / 3600000);
-    if (diffH < 1) return 'Just now';
-    if (diffH < 24) return `${diffH}h ago`;
-    const diffD = Math.floor(diffH / 24);
-    if (diffD < 7) return `${diffD}d ago`;
-    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const handleCancel = async (requestId, requestType) => {
+    try {
+      await requestService.cancelRequest(requestId, requestType);
+      setSnack({ open: true, msg: 'Request cancelled successfully.', severity: 'success' });
+      loadRequests();
+    } catch (err) {
+      setSnack({ open: true, msg: err.response?.data?.error || 'Cancellation failed.', severity: 'error' });
+    }
   };
 
   const renderStatusChip = (status) => {
@@ -97,6 +101,18 @@ const Requests = () => {
     );
   };
 
+  const incomingInvites = receivedRequests.filter(r => r.request_type === 'team_invite' || r.request_type === 'collab_request');
+  const sentOutreach = sentRequests;
+  const mentorshipRequests = receivedRequests.filter(r => r.request_type === 'mentor_request' || r.request_type === 'mentor_invite');
+
+  const getActiveList = () => {
+    if (tab === 0) return incomingInvites;
+    if (tab === 1) return sentOutreach;
+    return mentorshipRequests;
+  };
+
+  const activeList = getActiveList();
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 20, gap: 2 }}>
@@ -106,14 +122,12 @@ const Requests = () => {
     );
   }
 
-  const activeList = tab === 0 ? sentRequests : receivedRequests;
-
   return (
     <Box sx={{ maxWidth: 1000, mx: 'auto' }}>
       <Box sx={{ mb: 6 }}>
-        <Typography variant="h3" fontWeight={800} sx={{ letterSpacing: '-0.02em', mb: 1 }}>Requests & Invites</Typography>
+        <Typography variant="h3" fontWeight={800} sx={{ letterSpacing: '-0.02em', mb: 1 }}>Requests Hub</Typography>
         <Typography variant="body1" color="text.secondary">
-          Manage your sent applications and incoming collaboration requests in one place.
+          Track your invitations, applications, and mentorship requests.
         </Typography>
       </Box>
 
@@ -137,98 +151,54 @@ const Requests = () => {
           '& .MuiTabs-indicator': { backgroundColor: '#5e6ad2', height: 3, borderRadius: '3px 3px 0 0' }
         }}
       >
-        <Tab
-          label={
-            <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-              <ArrowUpRight size={18} />
-              <span>Sent Invitations</span>
-              {sentRequests.length > 0 && <Badge badgeContent={sentRequests.length} color="primary" sx={{ '& .MuiBadge-badge': { fontWeight: 800 } }} />}
-            </Stack>
-          }
-        />
-        <Tab
-          label={
-            <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-              <ArrowDownLeft size={18} />
-              <span>Received Requests</span>
-              {receivedRequests.length > 0 && <Badge badgeContent={receivedRequests.length} color="secondary" sx={{ '& .MuiBadge-badge': { fontWeight: 800 } }} />}
-            </Stack>
-          }
-        />
+        <Tab label={
+          <Stack direction="row" spacing={1} alignItems="center">
+            <ArrowDownLeft size={18} />
+            <span>Incoming Invites</span>
+            {incomingInvites.length > 0 && <Badge badgeContent={incomingInvites.length} color="primary" />}
+          </Stack>
+        } />
+        <Tab label={
+          <Stack direction="row" spacing={1} alignItems="center">
+            <ArrowUpRight size={18} />
+            <span>Sent Applications</span>
+          </Stack>
+        } />
+        <Tab label={
+          <Stack direction="row" spacing={1} alignItems="center">
+            <UserCircle size={18} />
+            <span>Mentorship</span>
+            {mentorshipRequests.length > 0 && <Badge badgeContent={mentorshipRequests.length} color="secondary" />}
+          </Stack>
+        } />
       </Tabs>
 
       {activeList.length === 0 ? (
-        <Card sx={{ 
-          textAlign: 'center', 
-          py: 12, 
-          background: 'rgba(255,255,255,0.02)', 
-          border: '1px dashed rgba(255,255,255,0.1)',
-          borderRadius: 5
-        }}>
+        <Card sx={{ textAlign: 'center', py: 12, background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 5 }}>
           <CardContent>
-            <Box sx={{ p: 2, borderRadius: '50%', background: 'rgba(255,255,255,0.03)', width: 'fit-content', mx: 'auto', mb: 3 }}>
-              <AlertCircle size={40} color="rgba(255,255,255,0.2)" />
-            </Box>
-            <Typography variant="h5" fontWeight={800} sx={{ mb: 1 }}>
-              {tab === 0 ? 'No Sent Requests' : 'No Received Requests'}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 400, mx: 'auto' }}>
-              {tab === 0
-                ? "You haven't sent any project applications or mentor requests yet. Start exploring to connect with others."
-                : "You don't have any pending requests. Your collaboration invitations and join requests will appear here."
-              }
-            </Typography>
+            <AlertCircle size={40} color="rgba(255,255,255,0.1)" />
+            <Typography variant="h6" sx={{ mt: 2 }}>Nothing here yet</Typography>
           </CardContent>
         </Card>
       ) : (
         <Stack spacing={2.5}>
           {activeList.map((req) => (
-            <Card 
-              key={`${req.request_type}-${req.id}`}
-              sx={{ 
-                background: '#16181D', 
-                border: '1px solid rgba(255,255,255,0.05)', 
-                borderRadius: 4,
-                transition: 'transform 0.2s, border-color 0.2s',
-                '&:hover': { borderColor: 'rgba(255,255,255,0.1)', transform: 'translateY(-2px)' }
-              }}
-            >
+            <Card key={`${req.request_type}-${req.id}`} sx={{ background: '#16181D', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 4 }}>
               <CardContent sx={{ p: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 3 }}>
-                  <Stack direction="row" spacing={2.5} sx={{ flexGrow: 1, minWidth: 0 }}>
-                    <Avatar 
-                      sx={{ 
-                        width: 52, height: 52, 
-                        background: 'linear-gradient(135deg, #5e6ad2 0%, #4b55c4 100%)',
-                        fontSize: '1.25rem',
-                        fontWeight: 800,
-                        boxShadow: '0 4px 12px rgba(94, 106, 210, 0.2)'
-                      }}
-                    >
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                  <Stack direction="row" spacing={2.5}>
+                    <Avatar sx={{ width: 52, height: 52, background: 'linear-gradient(135deg, #5e6ad2 0%, #4b55c4 100%)', fontWeight: 800 }}>
                       {(req.target_name || req.from_name || '?')[0]}
                     </Avatar>
-                    <Box sx={{ minWidth: 0 }}>
-                      <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 0.5 }}>
-                        <Typography variant="h6" fontWeight={800} noWrap sx={{ letterSpacing: '-0.01em' }}>
-                          {tab === 0
-                            ? req.target_name || 'Unknown'
-                            : req.from_name || 'Someone'
-                          }
-                        </Typography>
-                        {TYPE_ICONS[req.type_label] && (
-                          <Tooltip title={req.type_label}>
-                            <Box sx={{ color: 'text.secondary', display: 'flex' }}>
-                              {TYPE_ICONS[req.type_label]}
-                            </Box>
-                          </Tooltip>
-                        )}
-                      </Stack>
-                      
-                      <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                        {tab === 1 && <span style={{ color: '#5e6ad2', fontWeight: 600 }}>for {req.project_name || 'Mentorship'}</span>}
-                        {tab === 1 && <span>•</span>}
-                        <Clock size={14} /> {formatDate(req.created_at)}
+                    <Box>
+                      <Typography variant="h6" fontWeight={800}>{tab === 1 ? req.target_name : req.from_name}</Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                        {req.request_type.replace('_', ' ').toUpperCase()} • {formatDate(req.created_at)}
                       </Typography>
+                      
+                      {req.role && (
+                        <Chip label={req.role} size="small" sx={{ mb: 1, bgcolor: 'rgba(94, 106, 210, 0.1)', color: '#5e6ad2', fontWeight: 700 }} />
+                      )}
 
                       {req.message && (
                         <Box sx={{ 
@@ -236,7 +206,8 @@ const Requests = () => {
                           borderRadius: 2, 
                           background: 'rgba(255,255,255,0.03)',
                           border: '1px solid rgba(255,255,255,0.05)',
-                          position: 'relative'
+                          position: 'relative',
+                          mt: 1
                         }}>
                           <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', fontStyle: 'italic', lineHeight: 1.6 }}>
                             "{req.message}"
@@ -249,24 +220,56 @@ const Requests = () => {
                   <Stack spacing={2} sx={{ alignItems: 'flex-end' }}>
                     {renderStatusChip(req.status)}
                     
+                    {req.status === 'accepted' && req.team_id && (
+                      <Button
+                        size="small"
+                        variant="contained"
+                        startIcon={<Layout size={16} />}
+                        onClick={() => {
+                          window.location.href = `/workspace/${req.team_id}`;
+                        }}
+                        sx={{ 
+                          borderRadius: 2, 
+                          fontWeight: 800, 
+                          px: 2, 
+                          background: 'linear-gradient(135deg, #5e6ad2 0%, #4b55c4 100%)',
+                          boxShadow: '0 4px 12px rgba(94, 106, 210, 0.2)'
+                        }}
+                      >
+                        Join Collaboration
+                      </Button>
+                    )}
+
                     {tab === 1 && (req.status === 'pending' || req.status === 'requested') && (
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="error"
+                        onClick={() => handleCancel(req.id, req.request_type)}
+                        sx={{ borderRadius: 2, fontWeight: 800, px: 2 }}
+                      >
+                        Cancel Request
+                      </Button>
+                    )}
+                    
+                    {(tab === 0 || tab === 2) && (req.status === 'pending' || req.status === 'requested') && (
                       <Stack direction="row" spacing={1}>
                         <Button
                           size="small"
                           variant="contained"
-                          color="success"
+                          color="primary"
                           disableElevation
                           onClick={() => handleRespond(req.id, req.request_type, 'accepted')}
-                          sx={{ borderRadius: 2, fontWeight: 700, px: 2 }}
+                          sx={{ borderRadius: 2, fontWeight: 800, px: 2 }}
                         >
-                          Accept
+                          {req.request_type === 'team_invite' || req.request_type === 'mentor_invite' ? 'Join & Accept' : 'Accept'}
                         </Button>
                         <Button
                           size="small"
                           variant="outlined"
                           color="error"
                           onClick={() => handleRespond(req.id, req.request_type, 'rejected')}
-                          sx={{ borderRadius: 2, fontWeight: 700, px: 2 }}
+                          sx={{ borderRadius: 2, fontWeight: 800, px: 2 }}
                         >
                           Decline
                         </Button>

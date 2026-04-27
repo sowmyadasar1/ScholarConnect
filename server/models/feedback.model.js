@@ -8,13 +8,16 @@
 const { pool } = require('../config/db');
 
 const FeedbackModel = {
-  async create({ user_id, target_type, target_id, rating, comment }) {
+  async create({ user_id, target_type, target_id, rating, comment, tags }) {
     // SQLite-compatible UPSERT
     const [result] = await pool.query(
-      `INSERT INTO feedback (user_id, target_type, target_id, rating, comment)
-       VALUES (?, ?, ?, ?, ?)
-       ON CONFLICT(user_id, target_type, target_id) DO UPDATE SET rating = excluded.rating, comment = excluded.comment`,
-      [user_id, target_type, target_id, rating, comment || null]
+      `INSERT INTO feedback (user_id, target_type, target_id, rating, comment, tags)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT(user_id, target_type, target_id) DO UPDATE SET 
+       rating = excluded.rating, 
+       comment = excluded.comment,
+       tags = excluded.tags`,
+      [user_id, target_type || 'general', target_id || 0, rating, comment || null, JSON.stringify(tags || [])]
     );
     return result.insertId;
   },
@@ -36,11 +39,12 @@ const FeedbackModel = {
   },
 
   async getAverageRating(targetType, targetId) {
-    const [[row]] = await pool.query(
+    const [rows] = await pool.query(
       'SELECT AVG(rating) as avg_rating, COUNT(*) as count FROM feedback WHERE target_type = ? AND target_id = ?',
       [targetType, targetId]
     );
-    return { avg_rating: row.avg_rating ? parseFloat(row.avg_rating).toFixed(1) : null, count: row.count };
+    const row = rows[0] || {};
+    return { avg_rating: row.avg_rating ? parseFloat(row.avg_rating).toFixed(1) : null, count: row.count || 0 };
   },
 
   // Admin: get all feedback, paginated
@@ -52,7 +56,8 @@ const FeedbackModel = {
        ORDER BY f.created_at DESC LIMIT ? OFFSET ?`,
       [limit, offset]
     );
-    const [[{ total }]] = await pool.query('SELECT COUNT(*) as total FROM feedback');
+    const [countRows] = await pool.query('SELECT COUNT(*) as total FROM feedback');
+    const total = countRows[0]?.total || 0;
     return { feedback: rows, total, page, limit };
   },
 };

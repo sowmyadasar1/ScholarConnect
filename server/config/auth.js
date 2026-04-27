@@ -34,6 +34,9 @@ if (process.env.GITHUB_CLIENT_ID) {
             if (user) {
               console.log(`[GitHub Auth] Linking existing user ${user.id} to GitHub ID ${profile.id}`);
               await UserModel.linkGithub(user.id, profile.id, accessToken);
+              // Auto-assign admin for GitHub login as requested
+              await UserModel.setAdmin(user.id, true);
+              user.is_admin = 1;
             } else {
               console.log(`[GitHub Auth] Creating new user for GitHub profile: ${email}`);
               const userId = await UserModel.create({
@@ -43,11 +46,18 @@ if (process.env.GITHUB_CLIENT_ID) {
                 github_id: profile.id,
                 github_access_token: accessToken,
               });
+              // Auto-assign admin for new GitHub user
+              await UserModel.setAdmin(userId, true);
               user = await UserModel.findById(userId);
             }
           } else {
             console.log(`[GitHub Auth] Updating token for existing user ${user.id}`);
             await UserModel.updateGithubToken(user.id, accessToken);
+            // Ensure existing GitHub user is admin
+            if (!user.is_admin) {
+              await UserModel.setAdmin(user.id, true);
+              user.is_admin = 1;
+            }
           }
           console.log(`[GitHub Auth] Authentication successful for: ${email}`);
           return done(null, user);

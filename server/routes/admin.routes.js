@@ -30,6 +30,7 @@ router.get('/stats', AdminController.getStats);
 
 // User management
 router.get('/users', AdminController.listUsers);
+router.put('/users/:id/role', AdminController.updateUserRole);
 router.delete('/users/:id', AdminController.deleteUser);
 
 // Mentor management

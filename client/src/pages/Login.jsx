@@ -260,14 +260,16 @@ const Login = () => {
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                         variant="outlined"
                         size="small"
-                        InputProps={{
-                          endAdornment: (
-                            <InputAdornment position="end">
-                              <IconButton onClick={() => setShowPassword(!showPassword)} edge="end" size="small">
-                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                              </IconButton>
-                            </InputAdornment>
-                          ),
+                        slotProps={{
+                          input: {
+                            endAdornment: (
+                              <InputAdornment position="end">
+                                <IconButton onClick={() => setShowPassword(!showPassword)} edge="end" size="small">
+                                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </IconButton>
+                              </InputAdornment>
+                            ),
+                          }
                         }}
                         sx={{
                           '& .MuiOutlinedInput-root': { borderRadius: 2, background: 'rgba(0,0,0,0.2)' }

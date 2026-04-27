@@ -26,9 +26,12 @@ router.get('/github/repos', CollabController.listGithubRepos);
 router.get('/:id', CollabController.getById);
 router.post('/import', CollabController.importRepo);
 router.post('/manual', CollabController.createManual);
+router.put('/:id', CollabController.update);
+router.delete('/:id', CollabController.delete);
 router.put('/:id/toggle', CollabController.toggleCollab);
 router.post('/:id/request', CollabController.requestToJoin);
 router.post('/:id/invite', CollabController.inviteUser);
+router.get('/:id/smart-suggestions', CollabController.getSmartSuggestions);
 router.post('/:id/auto-invite', CollabController.autoInviteRole);
 router.put('/interactions/:interactionId/respond', CollabController.respondToInteraction);
 

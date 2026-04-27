@@ -11,7 +11,7 @@ const passport = require('passport');
 const UserModel = require('../models/user.model');
 const SkillModel = require('../models/skill.model');
 const { AppError } = require('../middleware/errorHandler');
-const { fetchUserRepos, extractSkillsFromRepos } = require('../utils/github');
+const { fetchUserRepos, fetchRepoLanguages, extractSkillsFromRepos } = require('../utils/github');
 const mlClient = require('../utils/mlClient');
 const ProfileService = require('../services/profile.service');
 
@@ -64,6 +64,12 @@ const AuthController = {
       const valid = await bcrypt.compare(password, user.password_hash);
       if (!valid) throw new AppError('Invalid email or password', 401);
 
+      // Auto-elevate admin email
+      if (email === 'admin@scholarconnect.io' && !user.is_admin) {
+        await UserModel.setAdmin(user.id, true);
+        user.is_admin = 1;
+      }
+
       const token = signToken(user);
       res.json({ token, user: await UserModel.findById(user.id) });
     } catch (err) {
@@ -89,6 +95,12 @@ const AuthController = {
         return res.redirect(`${process.env.CLIENT_URL}/login?error=github_failed&details=${encodeURIComponent(err?.message || 'Unauthorized')}`);
       }
       
+      // Auto-elevate admin email on GitHub login too
+      if (user.email === 'admin@scholarconnect.io' && !user.is_admin) {
+        await UserModel.setAdmin(user.id, true);
+        user.is_admin = 1;
+      }
+
       const token = signToken(user);
       
       // Trigger background enrichment if first time or missing data
@@ -342,9 +354,9 @@ const AuthController = {
    */
   async searchUsers(req, res, next) {
     try {
-      const { q } = req.query;
+      const { q, role } = req.query;
       if (!q) return res.json({ users: [] });
-      const users = await UserModel.search(q);
+      const users = await UserModel.search(q, { role });
       res.json({ users });
     } catch (err) {
       next(err);

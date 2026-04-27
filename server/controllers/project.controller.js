@@ -46,7 +46,18 @@ const ProjectController = {
       const techStack = await ProjectModel.getTechStack(project.id);
       const roadmap = await ProjectModel.getRoadmap(project.id);
 
-      res.json({ project, skills, techStack, roadmap });
+      // Check if this project is already in the collaboration hub
+      const { pool } = require('../config/db');
+      const [collabRows] = await pool.query('SELECT id, owner_id FROM collaboration_projects WHERE project_id = ?', [project.id]);
+      const collabProject = collabRows[0];
+
+      res.json({ 
+        project, 
+        skills, 
+        techStack, 
+        roadmap,
+        hub: collabProject ? { id: collabProject.id, owner_id: collabProject.owner_id } : null
+      });
     } catch (err) {
       next(err);
     }
@@ -250,18 +261,30 @@ const ProjectController = {
     try {
       const projectId = parseInt(req.params.id);
       const requesterId = req.user.id;
-      const { message } = req.body;
+      const { message, role } = req.body;
 
       const project = await ProjectModel.findById(projectId);
       if (!project) throw new AppError('Project not found', 404);
 
-      // Prevent duplicate applications
-      const existing = await ProjectModel.checkApplication(projectId, requesterId);
-      if (existing) throw new AppError('You have already applied to this project', 400);
+      // 1. Find the linked collaboration project
+      const [collabRows] = await pool.query('SELECT id FROM collaboration_projects WHERE project_id = ?', [projectId]);
+      const collabProject = collabRows[0];
+      
+      if (!collabProject) {
+        throw new AppError('This project is not currently open for collaboration in the hub.', 400);
+      }
 
+      // 2. Prevent duplicate applications
+      const [existing] = await pool.query(
+        'SELECT id FROM collaboration_requests WHERE collab_project_id = ? AND user_id = ?',
+        [collabProject.id, requesterId]
+      );
+      if (existing.length > 0) throw new AppError('You have already applied to this project', 400);
+
+      // 3. Insert correct fields
       await pool.query(
-        'INSERT INTO collaboration_requests (project_id, requester_id, message) VALUES (?, ?, ?)',
-        [projectId, requesterId, message || '']
+        'INSERT INTO collaboration_requests (collab_project_id, user_id, sender_id, type, role, message) VALUES (?, ?, ?, ?, ?, ?)',
+        [collabProject.id, requesterId, requesterId, 'request', role || 'contributor', message || '']
       );
 
       res.status(201).json({ message: 'Application submitted successfully!' });
@@ -278,20 +301,29 @@ const ProjectController = {
     try {
       const projectId = parseInt(req.params.id);
       const inviterId = req.user.id;
-      const { invitee_id, role } = req.body;
+      const { invitee_id, role, message } = req.body;
 
       if (!invitee_id) throw new AppError('Invitee ID is required', 400);
 
-      // Prevent duplicate invites
+      // 1. Find the linked collaboration project
+      const [collabRows] = await pool.query('SELECT id FROM collaboration_projects WHERE project_id = ?', [projectId]);
+      const collabProject = collabRows[0];
+      
+      if (!collabProject) {
+        throw new AppError('This project is not currently open for collaboration in the hub.', 400);
+      }
+
+      // 2. Prevent duplicate invites
       const [existing] = await pool.query(
-        'SELECT id FROM project_invites WHERE project_id = ? AND invitee_id = ? AND status = "pending"',
-        [projectId, invitee_id]
+        'SELECT id FROM collaboration_requests WHERE collab_project_id = ? AND user_id = ? AND type = "invite" AND status = "pending"',
+        [collabProject.id, invitee_id]
       );
       if (existing.length > 0) throw new AppError('An invite is already pending for this user', 400);
 
+      // 3. Insert into collaboration_requests
       await pool.query(
-        'INSERT INTO project_invites (project_id, inviter_id, invitee_id, role) VALUES (?, ?, ?, ?)',
-        [projectId, inviterId, invitee_id, role || 'Member']
+        'INSERT INTO collaboration_requests (collab_project_id, user_id, sender_id, type, role, message) VALUES (?, ?, ?, ?, ?, ?)',
+        [collabProject.id, invitee_id, inviterId, 'invite', role || 'Member', message || '']
       );
 
       res.status(201).json({ message: 'Invite sent successfully!' });

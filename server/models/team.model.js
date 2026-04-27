@@ -33,9 +33,25 @@ const TeamModel = {
 
   async findByUser(userId) {
     const [rows] = await pool.query(
-      `SELECT t.*, tm.assigned_role
+      `SELECT t.*, tm.role
        FROM team_members tm JOIN teams t ON tm.team_id = t.id
        WHERE tm.user_id = ?`,
+      [userId]
+    );
+    return rows;
+  },
+
+  async findAllByUser(userId) {
+    const [rows] = await pool.query(
+      `SELECT t.*, t.id as team_id, cp.repo_name, cp.description as project_description,
+              mm.explanation as mentorship_goal,
+              (SELECT name FROM users WHERE id = t.created_by) as owner_name
+       FROM team_members tm
+       JOIN teams t ON tm.team_id = t.id
+       LEFT JOIN collaboration_projects cp ON t.collab_project_id = cp.id
+       LEFT JOIN mentor_matches mm ON t.mentor_match_id = mm.id
+       WHERE tm.user_id = ?
+       ORDER BY t.created_at DESC`,
       [userId]
     );
     return rows;
@@ -51,10 +67,10 @@ const TeamModel = {
     return rows;
   },
 
-  async addMember(teamId, userId, assignedRole = null) {
+  async addMember(teamId, userId, role = 'member') {
     await pool.query(
-      'INSERT INTO team_members (team_id, user_id, assigned_role) VALUES (?, ?, ?)',
-      [teamId, userId, assignedRole]
+      'INSERT INTO team_members (team_id, user_id, role) VALUES (?, ?, ?)',
+      [teamId, userId, role]
     );
   },
 
@@ -63,7 +79,7 @@ const TeamModel = {
   },
 
   async assignRole(teamId, userId, role) {
-    await pool.query('UPDATE team_members SET assigned_role = ? WHERE team_id = ? AND user_id = ?', [role, teamId, userId]);
+    await pool.query('UPDATE team_members SET role = ? WHERE team_id = ? AND user_id = ?', [role, teamId, userId]);
   },
 
   async isFull(teamId) {
@@ -102,8 +118,8 @@ const TeamModel = {
 
   async createInvite(senderId, receiverId, teamId, collabProjectId, message) {
     const [result] = await pool.query(
-      'INSERT INTO collaboration_requests (collab_project_id, user_id, type, message) VALUES (?, ?, ?, ?)',
-      [collabProjectId, receiverId, 'invite', message || '']
+      'INSERT INTO collaboration_requests (collab_project_id, user_id, sender_id, type, message) VALUES (?, ?, ?, ?, ?)',
+      [collabProjectId || null, receiverId, senderId, 'invite', message || '']
     );
     return result.insertId;
   },
@@ -124,6 +140,11 @@ const TeamModel = {
 
   async respondToInvite(inviteId, status) {
     await pool.query('UPDATE collaboration_requests SET status = ? WHERE id = ?', [status, inviteId]);
+  },
+
+  async getInviteById(id) {
+    const [rows] = await pool.query('SELECT * FROM collaboration_requests WHERE id = ?', [id]);
+    return rows[0] || null;
   },
 };
 

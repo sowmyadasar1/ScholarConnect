@@ -9,38 +9,59 @@ const { pool } = require('../config/db');
 const CollabModel = {
   // ----------- Collaboration Projects -----------
 
-  async create({ owner_id, project_id, github_repo_url, repo_name, description, languages, topics }) {
+  async create({ owner_id, project_id, github_repo_url, repo_name, description, languages, topics, is_open_for_collab }) {
     const [result] = await pool.query(
       `INSERT INTO collaboration_projects (owner_id, project_id, github_repo_url, repo_name, description, languages, topics, is_open_for_collab)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
-      [owner_id, project_id || null, github_repo_url || null, repo_name, description || '', JSON.stringify(languages || {}), JSON.stringify(topics || [])]
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [owner_id, project_id || null, github_repo_url || null, repo_name, description || '', JSON.stringify(languages || {}), JSON.stringify(topics || []), is_open_for_collab !== undefined ? is_open_for_collab : 1]
     );
     return result.insertId;
   },
 
-  async findAll({ openOnly = true, page = 1, limit = 20, search } = {}) {
+  async findAll({ openOnly = true, page = 1, limit = 20, search, userId } = {}) {
     const params = [];
-    let query = `SELECT cp.*, u.name as owner_name, u.avatar_url as owner_avatar, p.title as catalog_title
+    // Use DISTINCT to avoid duplicates from the LEFT JOIN on teams
+    let query = `SELECT DISTINCT cp.*, u.name as owner_name, u.avatar_url as owner_avatar, p.title as catalog_title,
+                 (SELECT 1 FROM team_members tm JOIN teams t ON tm.team_id = t.id WHERE t.collab_project_id = cp.id AND tm.user_id = ? LIMIT 1) as is_member,
+                 (SELECT id FROM teams WHERE collab_project_id = cp.id LIMIT 1) as team_id
                  FROM collaboration_projects cp 
                  JOIN users u ON cp.owner_id = u.id
                  LEFT JOIN projects p ON cp.project_id = p.id
                  WHERE 1=1`;
+    params.push(userId || 0);
 
     if (openOnly) query += ' AND cp.is_open_for_collab = 1';
-    if (search) {
+    
+    const searchTerm = search ? search.trim() : '';
+    if (searchTerm) {
       query += ' AND (cp.repo_name LIKE ? OR cp.description LIKE ?)';
-      params.push(`%${search}%`, `%${search}%`);
+      params.push(`%${searchTerm}%`, `%${searchTerm}%`);
     }
     
     query += ' ORDER BY cp.created_at DESC LIMIT ? OFFSET ?';
     params.push(limit, (page - 1) * limit);
     
     const [rows] = await pool.query(query, params);
-    return rows.map(r => ({
-      ...r,
-      languages: typeof r.languages === 'string' ? JSON.parse(r.languages) : r.languages,
-      topics: typeof r.topics === 'string' ? JSON.parse(r.topics) : r.topics
-    }));
+    
+    // Total count for pagination
+    let countQuery = 'SELECT COUNT(*) as total FROM collaboration_projects WHERE 1=1';
+    if (openOnly) countQuery += ' AND is_open_for_collab = 1';
+    if (searchTerm) countQuery += ' AND (repo_name LIKE ? OR description LIKE ?)';
+    
+    const countParams = searchTerm ? [`%${searchTerm}%`, `%${searchTerm}%`] : [];
+    const [countResult] = await pool.query(countQuery, countParams);
+    const total = countResult[0]?.total || 0;
+
+    return {
+      projects: rows.map(r => ({
+        ...r,
+        languages: typeof r.languages === 'string' ? JSON.parse(r.languages) : (r.languages || {}),
+        topics: typeof r.topics === 'string' ? JSON.parse(r.topics) : (r.topics || [])
+      })),
+      total,
+      page,
+      limit
+    };
   },
 
   async findById(id) {
@@ -60,19 +81,23 @@ const CollabModel = {
     return r || null;
   },
 
-  async findByOwner(ownerId) {
+  async findByUser(userId) {
     const [rows] = await pool.query(
-      `SELECT cp.*, p.title as catalog_title 
+      `SELECT DISTINCT cp.*, p.title as catalog_title, t.id as team_id
        FROM collaboration_projects cp 
        LEFT JOIN projects p ON cp.project_id = p.id 
-       WHERE cp.owner_id = ?`, 
-      [ownerId]
+       LEFT JOIN teams t ON cp.id = t.collab_project_id
+       LEFT JOIN team_members tm ON t.id = tm.team_id
+       WHERE cp.owner_id = ? OR tm.user_id = ?`, 
+      [userId, userId]
     );
-    return rows.map(r => ({
-      ...r,
-      languages: typeof r.languages === 'string' ? JSON.parse(r.languages) : r.languages,
-      topics: typeof r.topics === 'string' ? JSON.parse(r.topics) : r.topics
-    }));
+    return {
+      projects: rows.map(r => ({
+        ...r,
+        languages: typeof r.languages === 'string' ? JSON.parse(r.languages) : r.languages,
+        topics: typeof r.topics === 'string' ? JSON.parse(r.topics) : r.topics
+      }))
+    };
   },
 
   async toggleCollab(id, isOpen) {
@@ -81,10 +106,10 @@ const CollabModel = {
 
   // ----------- Collaboration Interactions (Requests & Invites) -----------
 
-  async createInteraction({ collab_project_id, user_id, type, role, message }) {
+  async createInteraction({ collab_project_id, user_id, type, role, message, sender_id }) {
     const [result] = await pool.query(
-      'INSERT INTO collaboration_requests (collab_project_id, user_id, type, role, message) VALUES (?, ?, ?, ?, ?)',
-      [collab_project_id, user_id, type || 'request', role || null, message || '']
+      'INSERT INTO collaboration_requests (collab_project_id, user_id, type, role, message, sender_id) VALUES (?, ?, ?, ?, ?, ?)',
+      [collab_project_id, user_id, type || 'request', role || null, message || '', sender_id || null]
     );
     return result.insertId;
   },
@@ -133,6 +158,23 @@ const CollabModel = {
 
   async getInteractionById(requestId) {
     const [rows] = await pool.query('SELECT * FROM collaboration_requests WHERE id = ?', [requestId]);
+    return rows[0] || null;
+  },
+
+  async exists(ownerId, repoName, githubRepoUrl = null) {
+    const params = [ownerId, repoName];
+    let query = 'SELECT id FROM collaboration_projects WHERE owner_id = ? AND (repo_name = ?';
+    if (githubRepoUrl) {
+      query += ' OR github_repo_url = ?';
+      params.push(githubRepoUrl);
+    }
+    query += ')';
+    const [rows] = await pool.query(query, params);
+    return rows.length > 0;
+  },
+
+  async findByCatalogId(catalogId) {
+    const [rows] = await pool.query('SELECT * FROM collaboration_projects WHERE project_id = ?', [catalogId]);
     return rows[0] || null;
   },
 };

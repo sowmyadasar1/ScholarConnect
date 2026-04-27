@@ -14,6 +14,8 @@ import Settings from './pages/Settings';
 import Requests from './pages/Requests';
 import AuthCallback from './pages/AuthCallback';
 import AdminUsers from './pages/AdminUsers';
+import Workspace from './pages/Workspace';
+import MyNetwork from './pages/MyNetwork';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -46,9 +48,11 @@ function App() {
               <Route path="mentors" element={<Mentors />} />
               <Route path="teammates" element={<Teammates />} />
               <Route path="collaboration" element={<Collaboration />} />
+              <Route path="network" element={<MyNetwork />} />
               <Route path="requests" element={<Requests />} />
               <Route path="settings" element={<Settings />} />
               <Route path="feedback" element={<FeedbackUI />} />
+              <Route path="workspace/:teamId" element={<Workspace />} />
               <Route path="admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
               <Route path="admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
             </Route>

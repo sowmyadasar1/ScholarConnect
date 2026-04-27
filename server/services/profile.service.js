@@ -46,7 +46,13 @@ const ProfileService = {
 
       for (const [name, weight] of extracted) {
         const skill = await SkillModel.findOrCreate(name, 'language');
-        const proficiency = Math.min(5, Math.max(1, Math.ceil(Math.log10(weight / 1000))));
+        
+        // Map bytes to string labels
+        let proficiency = 'Beginner';
+        const kb = weight / 1024;
+        if (kb > 500) proficiency = 'Advanced';
+        else if (kb > 50) proficiency = 'Intermediate';
+        
         await SkillModel.addUserSkill(userId, skill.id, proficiency, 'github');
       }
 
