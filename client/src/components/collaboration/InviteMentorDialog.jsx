@@ -57,10 +57,10 @@ const InviteMentorDialog = ({ open, onClose, projectId, onInviteSent }) => {
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth
-      PaperProps={{ sx: { background: '#16181D', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6 } }}>
-      <DialogTitle sx={{ p: 4 }}>
-        <Typography variant="h5" fontWeight={900}>Invite Project Mentor</Typography>
-        <Typography variant="body2" color="text.secondary">Invite a previously matched mentor to guide this project.</Typography>
+      slotProps={{ paper: { sx: { background: '#16181D', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6 } } }}>
+      <DialogTitle sx={{ p: 4, fontWeight: 900, fontSize: '1.5rem' }}>
+        Invite Project Mentor
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontWeight: 500 }}>Invite a previously matched mentor to guide this project.</Typography>
       </DialogTitle>
 
       <DialogContent sx={{ p: 4, pt: 0 }}>

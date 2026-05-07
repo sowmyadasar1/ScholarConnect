@@ -102,8 +102,11 @@ const Requests = () => {
   };
 
   const incomingInvites = receivedRequests.filter(r => r.request_type === 'team_invite' || r.request_type === 'collab_request');
-  const sentOutreach = sentRequests;
-  const mentorshipRequests = receivedRequests.filter(r => r.request_type === 'mentor_request' || r.request_type === 'mentor_invite');
+  const sentOutreach = sentRequests.filter(r => r.request_type !== 'mentor_request' && r.request_type !== 'mentor_invite');
+  const mentorshipRequests = [
+    ...receivedRequests.filter(r => r.request_type === 'mentor_request' || r.request_type === 'mentor_invite'),
+    ...sentRequests.filter(r => r.request_type === 'mentor_request' || r.request_type === 'mentor_invite')
+  ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
   const getActiveList = () => {
     if (tab === 0) return incomingInvites;
@@ -152,20 +155,20 @@ const Requests = () => {
         }}
       >
         <Tab label={
-          <Stack direction="row" spacing={1} alignItems="center">
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
             <ArrowDownLeft size={18} />
             <span>Incoming Invites</span>
             {incomingInvites.length > 0 && <Badge badgeContent={incomingInvites.length} color="primary" />}
           </Stack>
         } />
         <Tab label={
-          <Stack direction="row" spacing={1} alignItems="center">
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
             <ArrowUpRight size={18} />
             <span>Sent Applications</span>
           </Stack>
         } />
         <Tab label={
-          <Stack direction="row" spacing={1} alignItems="center">
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
             <UserCircle size={18} />
             <span>Mentorship</span>
             {mentorshipRequests.length > 0 && <Badge badgeContent={mentorshipRequests.length} color="secondary" />}
@@ -191,7 +194,9 @@ const Requests = () => {
                       {(req.target_name || req.from_name || '?')[0]}
                     </Avatar>
                     <Box>
-                      <Typography variant="h6" fontWeight={800}>{tab === 1 ? req.target_name : req.from_name}</Typography>
+                      <Typography variant="h6" fontWeight={800}>
+                        {tab === 1 ? req.target_name : (req.from_name || req.target_name)}
+                      </Typography>
                       <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
                         {req.request_type.replace('_', ' ').toUpperCase()} • {formatDate(req.created_at)}
                       </Typography>

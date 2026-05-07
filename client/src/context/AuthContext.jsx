@@ -94,11 +94,15 @@ export const AuthProvider = ({ children }) => {
     logout();
   };
 
+  const refreshProfile = async () => {
+    await fetchCurrentUser();
+  };
+
   return (
     <AuthContext.Provider value={{
       user, loading,
       register, loginWithEmail, loginWithGitHub,
-      syncGitHub, updateProfile, addSkills, logout, deleteAccount
+      syncGitHub, refreshProfile, updateProfile, addSkills, logout, deleteAccount
     }}>
       {children}
     </AuthContext.Provider>

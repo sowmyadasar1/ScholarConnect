@@ -13,7 +13,7 @@ const UserModel = {
 
   async findById(id) {
     const [rows] = await pool.query(
-      'SELECT id, email, name, avatar_url, bio, github_id, google_id, github_access_token, academic_level, preferred_role, availability, is_admin, created_at FROM users WHERE id = ?',
+      'SELECT id, email, name, avatar_url, bio, github_id, google_id, github_access_token, academic_level, preferred_role, availability, is_admin, reputation_score, created_at FROM users WHERE id = ?',
       [id]
     );
     const user = rows[0] || null;
@@ -131,7 +131,7 @@ const UserModel = {
   async search(query, filters = {}, limit = 10) {
     const pattern = `%${query}%`;
     let sql = `
-      SELECT u.id, u.name, u.avatar_url, u.bio, u.academic_level, u.preferred_role
+      SELECT u.id, u.name, u.avatar_url, u.bio, u.academic_level, u.preferred_role, u.reputation_score
       FROM users u
     `;
     const params = [pattern, pattern, pattern, pattern];

@@ -53,11 +53,25 @@ const CollabModel = {
     const total = countResult[0]?.total || 0;
 
     return {
-      projects: rows.map(r => ({
-        ...r,
-        languages: typeof r.languages === 'string' ? JSON.parse(r.languages) : (r.languages || {}),
-        topics: typeof r.topics === 'string' ? JSON.parse(r.topics) : (r.topics || [])
-      })),
+      projects: rows.map(r => {
+        let languages = {};
+        let topics = [];
+        try {
+          languages = typeof r.languages === 'string' ? JSON.parse(r.languages) : (r.languages || {});
+        } catch (e) {
+          if (typeof r.languages === 'string') {
+            r.languages.split(',').forEach(l => languages[l.trim()] = 1);
+          }
+        }
+        try {
+          topics = typeof r.topics === 'string' ? JSON.parse(r.topics) : (r.topics || []);
+        } catch (e) {
+          if (typeof r.topics === 'string') {
+            topics = r.topics.split(',').map(t => t.trim());
+          }
+        }
+        return { ...r, languages, topics };
+      }),
       total,
       page,
       limit
@@ -75,8 +89,19 @@ const CollabModel = {
     );
     const r = rows[0];
     if (r) {
-      r.languages = typeof r.languages === 'string' ? JSON.parse(r.languages) : r.languages;
-      r.topics = typeof r.topics === 'string' ? JSON.parse(r.topics) : r.topics;
+      try {
+        r.languages = typeof r.languages === 'string' ? JSON.parse(r.languages) : r.languages;
+      } catch (e) {
+        const langMap = {};
+        if (typeof r.languages === 'string') r.languages.split(',').forEach(l => langMap[l.trim()] = 1);
+        r.languages = langMap;
+      }
+      try {
+        r.topics = typeof r.topics === 'string' ? JSON.parse(r.topics) : r.topics;
+      } catch (e) {
+        if (typeof r.topics === 'string') r.topics = r.topics.split(',').map(t => t.trim());
+        else r.topics = [];
+      }
     }
     return r || null;
   },
@@ -92,11 +117,21 @@ const CollabModel = {
       [userId, userId]
     );
     return {
-      projects: rows.map(r => ({
-        ...r,
-        languages: typeof r.languages === 'string' ? JSON.parse(r.languages) : r.languages,
-        topics: typeof r.topics === 'string' ? JSON.parse(r.topics) : r.topics
-      }))
+      projects: rows.map(r => {
+        let languages = {};
+        let topics = [];
+        try {
+          languages = typeof r.languages === 'string' ? JSON.parse(r.languages) : r.languages;
+        } catch (e) {
+          if (typeof r.languages === 'string') r.languages.split(',').forEach(l => languages[l.trim()] = 1);
+        }
+        try {
+          topics = typeof r.topics === 'string' ? JSON.parse(r.topics) : r.topics;
+        } catch (e) {
+          if (typeof r.topics === 'string') topics = r.topics.split(',').map(t => t.trim());
+        }
+        return { ...r, languages, topics };
+      })
     };
   },
 

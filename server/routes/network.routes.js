@@ -12,6 +12,7 @@ router.get('/collaborators', NetworkController.getCollaborators);
 router.get('/mentors', NetworkController.getMentors);
 router.get('/suggestions/:projectId', NetworkController.getInviteSuggestions);
 
+router.get('/history', NetworkController.getHistory);
 router.post('/invite-collaborator', NetworkController.inviteCollaborator);
 router.post('/invite-mentor', NetworkController.inviteMentor);
 

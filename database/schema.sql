@@ -44,6 +44,7 @@ CREATE TABLE users (
     preferred_role TEXT DEFAULT 'contributor',
     availability TEXT DEFAULT 'flexible',
     is_admin INTEGER DEFAULT 0,
+    reputation_score REAL DEFAULT 0.0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

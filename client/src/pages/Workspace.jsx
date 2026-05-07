@@ -54,10 +54,6 @@ const Workspace = () => {
   const [chatInput, setChatInput] = useState('');
   const [sending, setSending] = useState(false);
 
-  // Note state
-  const [noteDialog, setNoteDialog] = useState(false);
-  const [noteForm, setNoteForm] = useState({ title: '', content: '' });
-
   // Invite states
   const [inviteNetworkDialog, setInviteNetworkDialog] = useState(false);
   const [inviteMentorDialog, setInviteMentorDialog] = useState(false);
@@ -149,40 +145,7 @@ const Workspace = () => {
     }
   };
 
-  // ─── Note Handlers ──────────────────────────────
-  const handleCreateNote = async () => {
-    try {
-      await workspaceService.createNote(teamId, noteForm);
-      setNoteDialog(false);
-      setNoteForm({ title: '', content: '' });
-      loadWorkspace();
-      setSnack({ open: true, msg: 'Note added!', severity: 'success' });
-    } catch (err) {
-      setSnack({ open: true, msg: 'Failed to create note', severity: 'error' });
-    }
-  };
 
-  const handleDeleteNote = async (noteId) => {
-    try {
-      await workspaceService.deleteNote(teamId, noteId);
-      setWorkspace(prev => ({ ...prev, notes: prev.notes.filter(n => n.id !== noteId) }));
-      setSnack({ open: true, msg: 'Note deleted', severity: 'success' });
-    } catch (err) {
-      setSnack({ open: true, msg: 'Failed to delete note', severity: 'error' });
-    }
-  };
-
-  const handleTogglePin = async (noteId, currentPin) => {
-    try {
-      await workspaceService.updateNote(teamId, noteId, { is_pinned: currentPin ? 0 : 1 });
-      setWorkspace(prev => ({
-        ...prev,
-        notes: prev.notes.map(n => n.id === noteId ? { ...n, is_pinned: currentPin ? 0 : 1 } : n)
-      }));
-    } catch (err) {
-      setSnack({ open: true, msg: 'Failed to update note', severity: 'error' });
-    }
-  };
 
   if (loading) {
     return (
@@ -222,7 +185,7 @@ const Workspace = () => {
           >
             Back to Hub
           </Button>
-          <Stack direction="row" spacing={2} alignItems="center">
+          <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
             <Box sx={{ 
               width: 48, height: 48, borderRadius: 3, 
               background: 'linear-gradient(135deg, #5e6ad2, #4b55c4)',
@@ -277,7 +240,6 @@ const Workspace = () => {
             <Tab icon={<Target size={20} />} iconPosition="start" label="Project Hub" />
             <Tab icon={<LayoutGrid size={20} />} iconPosition="start" label="Board" />
             <Tab icon={<MessageSquare size={20} />} iconPosition="start" label="Slack Chat" />
-            <Tab icon={<FileText size={20} />} iconPosition="start" label="Shared Notes" />
             <Tab icon={<Settings size={20} />} iconPosition="start" label="Squad Management" />
           </Tabs>
 
@@ -335,7 +297,7 @@ const Workspace = () => {
                                       m.status === 'in_progress' ? 'rgba(94, 106, 210, 0.08)' : 'rgba(255,255,255,0.01)',
                           transition: 'transform 0.2s', '&:hover': { transform: 'translateX(4px)' }
                         }}>
-                          <Stack direction="row" spacing={3} alignItems="center">
+                          <Stack direction="row" spacing={3} sx={{ alignItems: 'center' }}>
                             <Box sx={{ color: m.status === 'done' ? '#4caf50' : m.status === 'in_progress' ? '#5e6ad2' : 'rgba(255,255,255,0.2)' }}>
                               {m.status === 'done' ? <CheckCircle2 size={24} /> : m.status === 'in_progress' ? <Timer size={24} /> : <Circle size={24} />}
                             </Box>
@@ -439,7 +401,7 @@ const Workspace = () => {
                       border: '1px solid rgba(255,255,255,0.05)', p: 3, minHeight: 600,
                       boxShadow: 'inset 0 0 40px rgba(0,0,0,0.1)'
                     }}>
-                      <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 4 }}>
+                      <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mb: 4 }}>
                         <Box sx={{ 
                           width: 32, height: 32, borderRadius: 2, bgcolor: `${config.color}15`, 
                           display: 'flex', alignItems: 'center', justifyContent: 'center', color: config.color 
@@ -485,7 +447,7 @@ const Workspace = () => {
                         '&:hover': { bgcolor: 'rgba(255,255,255,0.03)' }
                       }}
                     >
-                      <Stack direction="row" spacing={1.5} alignItems="center">
+                      <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
                         <Box sx={{ color: activeChannel === ch.id ? '#5e6ad2' : 'text.secondary' }}>{ch.icon}</Box>
                         <Typography fontWeight={activeChannel === ch.id ? 800 : 500} variant="body2">{ch.name}</Typography>
                       </Stack>
@@ -497,7 +459,7 @@ const Workspace = () => {
                   <Typography variant="h6" fontWeight={900} sx={{ mt: 5, mb: 3, color: 'text.secondary', fontSize: '0.8rem', textTransform: 'uppercase' }}>Direct Messages</Typography>
                   <Stack spacing={1}>
                     {(members || []).map(m => (
-                      <Stack key={m.id} direction="row" spacing={1.5} alignItems="center" sx={{ opacity: 0.7, cursor: 'pointer', '&:hover': { opacity: 1 } }}>
+                      <Stack key={m.id} direction="row" spacing={1.5} sx={{ alignItems: 'center', opacity: 0.7, cursor: 'pointer', '&:hover': { opacity: 1 } }}>
                         <Badge variant="dot" color="success" anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
                           <Avatar src={m.avatar_url} sx={{ width: 24, height: 24 }} />
                         </Badge>
@@ -511,9 +473,9 @@ const Workspace = () => {
               {/* Chat Window */}
               <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: { xs: 500, md: 'auto' } }}>
                 <Box sx={{ p: 3, borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Stack direction="row" spacing={1.5} alignItems="center">
+                  <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
                     <Typography variant="h6" fontWeight={900}>#{activeChannel}</Typography>
-                    <Divider orientation="vertical" flexItem sx={{ height: 16, alignSelf: 'center', borderColor: 'rgba(255,255,255,0.1)' }} />
+                    <Divider orientation="vertical" flexItem sx={{ height: 16, alignSelf: 'center', borderColor: 'rgba(255,255,255,0.1)', mx: 2 }} />
                     <Typography variant="body2" color="text.secondary">{members?.length || 0} Members</Typography>
                   </Stack>
                   <Stack direction="row" spacing={1}>
@@ -529,7 +491,7 @@ const Workspace = () => {
                       <Box key={msg.id || i} sx={{ display: 'flex', gap: 2.5, mb: 4, transition: 'all 0.2s', '&:hover': { bgcolor: 'rgba(255,255,255,0.01)' }, p: 1, borderRadius: 2 }}>
                         <Avatar src={msg.avatar_url} sx={{ width: 44, height: 44, borderRadius: 3 }}>{msg.user_name?.[0]}</Avatar>
                         <Box>
-                          <Stack direction="row" spacing={1.5} alignItems="center" mb={0.5}>
+                          <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', mb: 0.5 }}>
                             <Typography variant="subtitle2" fontWeight={900} color={isMe ? '#5e6ad2' : 'text.primary'}>{msg.user_name}</Typography>
                             <Typography variant="caption" color="text.secondary">
                               {msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
@@ -564,122 +526,15 @@ const Workspace = () => {
             </Card>
           )}
 
-          {/* ──── Tab 3: Shared Notes ──── */}
+          {/* ──── Tab 3: Team Management ──── */}
           {activeTab === 3 && (
             <Box>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
-                <Typography variant="h5" fontWeight={900}>Shared Notes</Typography>
-                <Button 
-                  variant="contained" startIcon={<Plus size={18} />}
-                  onClick={() => setNoteDialog(true)}
-                  sx={{ borderRadius: 2, fontWeight: 800, background: 'linear-gradient(135deg, #5e6ad2, #4b55c4)' }}
-                >
-                  New Note
-                </Button>
-              </Stack>
-              <Grid container spacing={3}>
-                {(notes || []).map(note => (
-                  <Grid item xs={12} md={6} key={note.id}>
-                    <Card sx={{ 
-                      background: '#16181D', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 5, 
-                      height: '100%', transition: 'all 0.3s', '&:hover': { borderColor: '#5e6ad2', transform: 'translateY(-4px)' }
-                    }}>
-                      <CardContent sx={{ p: 4 }}>
-                        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={3}>
-                          <Stack direction="row" spacing={2} alignItems="center">
-                            <Box sx={{ p: 1, borderRadius: 2, bgcolor: 'rgba(94, 106, 210, 0.1)', color: '#5e6ad2' }}>
-                              <FileText size={20} />
-                            </Box>
-                            <Typography variant="h6" fontWeight={800}>{note.title}</Typography>
-                          </Stack>
-                          <Stack direction="row" spacing={0.5}>
-                            <Tooltip title={note.is_pinned ? "Unpin Note" : "Pin Note"}>
-                              <IconButton size="small" onClick={() => handleTogglePin(note.id, note.is_pinned)} sx={{ color: note.is_pinned ? '#f5a623' : 'text.secondary' }}>
-                                <Pin size={18} />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Delete Note">
-                              <IconButton size="small" onClick={() => handleDeleteNote(note.id)} sx={{ color: 'text.secondary', '&:hover': { color: '#f44336' } }}>
-                                <Trash2 size={18} />
-                              </IconButton>
-                            </Tooltip>
-                          </Stack>
-                        </Stack>
-                        <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
-                          {note.content}
-                        </Typography>
-                        <Divider sx={{ my: 3, borderColor: 'rgba(255,255,255,0.05)' }} />
-                        <Stack direction="row" spacing={2} alignItems="center">
-                          <Avatar sx={{ width: 24, height: 24, fontSize: '0.7rem' }}>{note.author_name?.[0]}</Avatar>
-                          <Typography variant="caption" fontWeight={700}>{note.author_name}</Typography>
-                        </Stack>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                ))}
-              </Grid>
-            </Box>
-          )}
-
-          {/* ──── Tab 4: Team Management ──── */}
-          {activeTab === 4 && (
-            <Box>
-              <Card sx={{ background: '#16181D', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 5, mb: 4 }}>
-                <CardContent sx={{ p: 4 }}>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4}>
-                    <Box>
-                      <Typography variant="h5" fontWeight={900}>Manage Project Squad</Typography>
-                      <Typography variant="body2" color="text.secondary">Configure roles and expand your team from your network.</Typography>
-                    </Box>
-                    <Button 
-                      variant="contained" 
-                      startIcon={<Plus size={18} />}
-                      onClick={() => setInviteNetworkDialog(true)}
-                      sx={{ borderRadius: 2, fontWeight: 800, background: 'linear-gradient(135deg, #5e6ad2, #4b55c4)' }}
-                    >
-                      Invite from Network
-                    </Button>
-                  </Stack>
-
-                  <List sx={{ p: 0 }}>
-                    {members.map(m => (
-                      <ListItem 
-                        key={m.id} 
-                        sx={{ 
-                          mb: 2, p: 2, borderRadius: 3, border: '1px solid rgba(255,255,255,0.03)',
-                          bgcolor: 'rgba(255,255,255,0.01)',
-                          display: 'flex', alignItems: 'center', gap: 2
-                        }}
-                      >
-                        <ListItemAvatar>
-                          <Avatar src={m.avatar_url}>{m.name[0]}</Avatar>
-                        </ListItemAvatar>
-                        <ListItemText 
-                          primary={<Typography fontWeight={800}>{m.name} {m.id === user.id && '(You)'}</Typography>}
-                          secondary={m.preferred_role || 'Contributor'}
-                        />
-                        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                          <Chip 
-                            label={m.role || 'Member'} 
-                            size="small" 
-                            sx={{ bgcolor: 'rgba(94, 106, 210, 0.1)', color: '#5e6ad2', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.65rem' }} 
-                          />
-                          {team.owner_id === user.id && m.id !== user.id && (
-                            <IconButton size="small" color="error" sx={{ opacity: 0.5, '&:hover': { opacity: 1 } }}>
-                              <Trash2 size={18} />
-                            </IconButton>
-                          )}
-                        </Box>
-                      </ListItem>
-                    ))}
-                  </List>
-                </CardContent>
-              </Card>
+              {/* Squad Management hidden for now */}
 
               {/* Mentors Section */}
               <Card sx={{ background: '#16181D', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 5 }}>
                 <CardContent sx={{ p: 4 }}>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4}>
+                  <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
                     <Box>
                       <Typography variant="h6" fontWeight={900}>Project Mentors</Typography>
                       <Typography variant="body2" color="text.secondary">Expert advisors assisting this specific project.</Typography>
@@ -708,7 +563,7 @@ const Workspace = () => {
       {/* Dialogs */}
       <Dialog open={taskDialog} onClose={() => setTaskDialog(false)} maxWidth="sm" fullWidth
         slotProps={{ paper: { sx: { background: '#16181D', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6 } } }}>
-        <DialogTitle sx={{ p: 4 }}><Typography variant="h5" fontWeight={900}>Create Mission Task</Typography></DialogTitle>
+        <DialogTitle sx={{ p: 4, fontWeight: 900, fontSize: '1.5rem' }}>Create Mission Task</DialogTitle>
         <DialogContent sx={{ p: 4, pt: 0 }}>
           <Stack spacing={3}>
             <TextField fullWidth label="Task Title" variant="filled" value={taskForm.title} onChange={e => setTaskForm(f => ({ ...f, title: e.target.value }))} />
@@ -768,7 +623,7 @@ const TaskCard = ({ task, status, onMove, onDelete }) => {
       transition: 'all 0.2s', '&:hover': { borderColor: '#5e6ad2', transform: 'translateY(-2px)', boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }
     }}>
       <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={1.5}>
+        <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
           <Typography variant="subtitle1" fontWeight={800} sx={{ flex: 1, lineHeight: 1.3 }}>{task.title}</Typography>
           <IconButton size="small" onClick={e => setAnchorEl(e.currentTarget)} sx={{ color: 'text.secondary' }}>
             <MoreVertical size={16} />
@@ -781,7 +636,7 @@ const TaskCard = ({ task, status, onMove, onDelete }) => {
           </Typography>
         )}
 
-        <Stack direction="row" spacing={1.5} alignItems="center">
+        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
           <Chip 
             label={task.priority} size="small"
             sx={{ 

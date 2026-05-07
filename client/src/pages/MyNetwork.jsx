@@ -33,6 +33,7 @@ const MyNetwork = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [network, setNetwork] = useState({ collaborators: [], mentors: [], history: [] });
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -42,14 +43,15 @@ const MyNetwork = () => {
   const fetchNetwork = async () => {
     setLoading(true);
     try {
-      const [collabs, mentors] = await Promise.all([
+      const [collabs, mentors, history] = await Promise.all([
         api.get('/network/collaborators'),
-        api.get('/network/mentors')
+        api.get('/network/mentors'),
+        api.get('/network/history')
       ]);
       setNetwork({
         collaborators: collabs.data.collaborators,
         mentors: mentors.data.mentors,
-        history: [] // Future: Add history fetch
+        history: history.data.history || []
       });
     } catch (err) {
       console.error('Failed to fetch network:', err);
@@ -103,13 +105,16 @@ const MyNetwork = () => {
                   fullWidth 
                   variant="contained" 
                   size="small"
-                  onClick={() => navigate('/collaboration')}
+                  onClick={() => navigate('/collaboration', { state: { autoOpenImport: true, prefillUser: collab.name } })}
                   sx={{ background: '#5e6ad2', borderRadius: 2, py: 1 }}
                 >
                   Invite to New Project
                 </Button>
                 <Tooltip title="Direct Message">
-                  <IconButton sx={{ bgcolor: 'rgba(255,255,255,0.03)', borderRadius: 2 }}>
+                  <IconButton 
+                    onClick={() => setSnackbar({ open: true, message: `Starting secure thread with ${collab.name}... Please wait for them to accept.`, severity: 'success' })}
+                    sx={{ bgcolor: 'rgba(255,255,255,0.03)', borderRadius: 2 }}
+                  >
                     <MessageSquare size={18} />
                   </IconButton>
                 </Tooltip>
@@ -215,13 +220,52 @@ const MyNetwork = () => {
           {activeTab === 0 && renderCollaborators()}
           {activeTab === 1 && renderMentors()}
           {activeTab === 2 && (
-            <Box sx={{ p: 10, textAlign: 'center' }}>
-              <History size={48} color="rgba(255,255,255,0.1)" />
-              <Typography color="text.secondary" sx={{ mt: 2 }}>Collaboration history will appear here after project completion.</Typography>
+            <Box>
+              {network.history.length === 0 ? (
+                <Box sx={{ p: 10, textAlign: 'center' }}>
+                  <History size={48} color="rgba(255,255,255,0.1)" />
+                  <Typography color="text.secondary" sx={{ mt: 2 }}>Collaboration history will appear here after project activity.</Typography>
+                </Box>
+              ) : (
+                <Stack spacing={2}>
+                  {network.history.map((item) => (
+                    <Card key={item.id} sx={{ background: '#16181D', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 3 }}>
+                      <CardContent sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 2.5 }}>
+                        <Box sx={{ p: 1.5, borderRadius: 2, background: 'rgba(94, 106, 210, 0.1)', color: '#5e6ad2' }}>
+                          <Zap size={20} />
+                        </Box>
+                        <Box sx={{ flexGrow: 1 }}>
+                          <Typography variant="subtitle1" fontWeight={800} sx={{ mb: 0.5 }}>{item.team_name}</Typography>
+                          <Typography variant="body2" color="text.secondary">{item.details}</Typography>
+                          <Typography variant="caption" sx={{ color: '#5e6ad2', fontWeight: 700, mt: 1, display: 'block' }}>
+                            Actor: {item.actor_name}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ textAlign: 'right' }}>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase' }}>
+                            {new Date(item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                          </Typography>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </Stack>
+              )}
             </Box>
           )}
         </>
       )}
+
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={4000} 
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity={snackbar.severity} variant="filled" sx={{ borderRadius: 3 }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

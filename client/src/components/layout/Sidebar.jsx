@@ -59,7 +59,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
     { text: 'Teammates', icon: <Users size={20} />, path: '/teammates' },
     { text: 'Collaboration', icon: <Share2 size={20} />, path: '/collaboration' },
     { text: 'My Network', icon: <Users size={20} />, path: '/network' },
-    { text: 'My Requests', icon: <MessageSquare size={20} />, path: '/requests', badge: reqCount },
+    { text: 'My Requests', icon: <MessageSquare size={20} />, path: '/requests' },
   ];
 
   const bottomItems = [
@@ -140,11 +140,6 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
                     primary={
                       <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 1 }}>
                         <Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }}>{item.text}</Typography>
-                        {item.badge > 0 && (
-                          <Box sx={{ bgcolor: '#ff5757', color: '#fff', borderRadius: '50%', width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', fontWeight: 800 }}>
-                            {item.badge}
-                          </Box>
-                        )}
                       </Box>
                     }
                   />

@@ -52,16 +52,17 @@ def match_teammates(user_profile, candidates):
         total_score = round(((overlap_score * 0.35) + (complementary_score * 0.25) + (role_score * 0.20) + (interest_score * 0.10) + (exp_score * 0.10)) * 100, 2)
         
         # Build Explanation
-        reasoning = f"{total_score}% match — "
         reasons = []
         if overlap_skills:
             reasons.append(f"shared foundation in {list(overlap_skills)[0].title()}")
         if unique_to_cand:
-            reasons.append(f"complements your gaps with {list(unique_to_cand)[0].title()}")
+            reasons.append(f"brings expertise in {list(unique_to_cand)[0].title()} to your stack")
         if role_score > 0.8:
-            reasons.append(f"perfectly balances your {user_role} role as a {cand_role}")
+            reasons.append(f"balances your {user_role} experience with {cand_role} skills")
+        else:
+            reasons.append("synergistic team profile")
             
-        final_explanation = reasoning + (" and ".join(reasons) if reasons else "balanced profile for your squad.")
+        final_explanation = f"{total_score}% Match — " + " and ".join(reasons[:2]) + "."
 
         suggestions.append({
             "suggested_user_id": cand['id'],

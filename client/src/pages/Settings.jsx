@@ -21,7 +21,7 @@ const PROFICIENCY_LEVELS = [
 ];
 
 const Settings = () => {
-  const { user, syncGitHub, updateProfile, logout, deleteAccount } = useAuth();
+  const { user, syncGitHub, refreshProfile, updateProfile, logout, deleteAccount } = useAuth();
 
   const [editMode, setEditMode] = useState(false);
   const [repoDialogOpen, setRepoDialogOpen] = useState(false);
@@ -137,7 +137,7 @@ const Settings = () => {
       }]);
       showSnack(`${trimmed} added successfully!`);
       setSkillInput('');
-      syncGitHub();
+      refreshProfile();
     } catch (err) {
       showSnack('Failed to add skill.', 'error');
     } finally {
@@ -149,7 +149,7 @@ const Settings = () => {
     try {
       await authService.deleteSkill(skillId);
       showSnack('Skill removed.');
-      syncGitHub();
+      refreshProfile();
     } catch (err) {
       showSnack('Failed to remove skill.', 'error');
     }
@@ -176,11 +176,13 @@ const Settings = () => {
   if (!user) return null;
 
   const academicOptions = [
-    { value: 'Undergraduate', label: 'Undergraduate' },
-    { value: 'Postgraduate', label: 'Postgraduate' },
-    { value: 'PhD', label: 'PhD' },
-    { value: 'Alumni', label: 'Alumni' },
-    { value: 'Faculty', label: 'Faculty' }
+    { value: 'B.Tech 1st Year', label: 'B.Tech 1st Year' },
+    { value: 'B.Tech 2nd Year', label: 'B.Tech 2nd Year' },
+    { value: 'B.Tech 3rd Year', label: 'B.Tech 3rd Year' },
+    { value: 'B.Tech 4th Year', label: 'B.Tech 4th Year' },
+    { value: 'M.Tech / Masters', label: 'M.Tech / Masters' },
+    { value: 'PhD Scholar', label: 'PhD Scholar' },
+    { value: 'Faculty / Mentor', label: 'Faculty / Mentor' }
   ];
 
   return (
@@ -191,7 +193,7 @@ const Settings = () => {
       </Typography>
 
       <Grid container spacing={4}>
-        <Grid item xs={12} md={7}>
+        <Grid xs={12} md={7}>
           {/* Profile Card */}
           <Card sx={{ mb: 4, background: '#16181D', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 4 }}>
             <CardContent sx={{ p: 4 }}>
@@ -228,7 +230,7 @@ const Settings = () => {
               </Box>
 
               <Grid container spacing={3}>
-                <Grid item xs={12}>
+                <Grid xs={12}>
                   <Typography variant="subtitle2" gutterBottom fontWeight={600} color="text.secondary">Bio</Typography>
                   {editMode ? (
                     <TextField 
@@ -314,7 +316,7 @@ const Settings = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} md={5}>
+        <Grid xs={12} md={5}>
           {/* Expertise & Skills */}
           <Card sx={{ mb: 4, background: '#16181D', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 4, height: '100%' }}>
             <CardContent sx={{ p: 4 }}>

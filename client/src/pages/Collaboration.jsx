@@ -12,7 +12,7 @@ import {
   Clock, Shield, LayoutGrid, List as ListIcon, Settings2,
   Sparkles, Code2, Cpu, Database
 } from 'lucide-react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useLocation } from 'react-router-dom';
 import { collabService } from '../services/collabService';
 import { authService } from '../services/authService';
 import { useAuth } from '../context/AuthContext';
@@ -43,10 +43,15 @@ const Collaboration = () => {
   // Form State
   const [joinForm, setJoinForm] = useState({ role: 'Backend Engineer', message: '' });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const location = useLocation();
 
   useEffect(() => {
     fetchData();
-  }, [tab, searchQuery]);
+    if (location.state?.autoOpenImport) {
+      handleOpenImport();
+      setSnackbar({ open: true, message: `Invite flow started. Import a repository to invite ${location.state.prefillUser}.`, severity: 'info' });
+    }
+  }, [tab, searchQuery, location.state]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -414,7 +419,7 @@ const Collaboration = () => {
         slotProps={{ paper: { sx: { background: '#16181D', borderRadius: 5, border: '1px solid rgba(255,255,255,0.1)' } } }}
       >
         <DialogTitle sx={{ p: 4, pb: 2 }}>
-          <Typography variant="h5" fontWeight={800}>Apply for Collaboration</Typography>
+          <Typography variant="h5" component="div" fontWeight={800}>Apply for Collaboration</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
             Project: <strong style={{ color: '#fff' }}>{selectedProject?.repo_name}</strong>
           </Typography>
@@ -712,8 +717,8 @@ const SmartInviteModal = ({ open, project, onClose, onInvited }) => {
       onClose={onClose} 
       maxWidth="md" 
       fullWidth
-      PaperProps={{
-        sx: { background: '#16181D', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6, backgroundImage: 'none' }
+      slotProps={{
+        paper: { sx: { background: '#16181D', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6, backgroundImage: 'none' } }
       }}
     >
       <DialogTitle sx={{ p: 4 }}>
@@ -722,7 +727,7 @@ const SmartInviteModal = ({ open, project, onClose, onInvited }) => {
             <Sparkles size={24} />
           </Box>
           <Box>
-            <Typography variant="h5" fontWeight={800}>Smart Teammate Suggestions</Typography>
+            <Typography variant="h5" component="div" fontWeight={800}>Smart Teammate Suggestions</Typography>
             <Typography variant="body2" color="text.secondary">AI-ranked candidates for {project?.repo_name}</Typography>
           </Box>
         </Stack>

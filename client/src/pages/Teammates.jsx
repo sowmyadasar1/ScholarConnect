@@ -126,7 +126,7 @@ const Teammates = () => {
           }
 
           return (
-            <Grid item xs={12} lg={6} key={id}>
+            <Grid xs={12} lg={6} key={id}>
               <Card sx={{ 
                 height: '100%', 
                 background: '#16181D', 
@@ -211,7 +211,7 @@ const Teammates = () => {
                         ))
                       ) : (
                         <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                          Generalist Researcher
+                          Full-stack Academic
                         </Typography>
                       )}
                     </Stack>
@@ -227,7 +227,7 @@ const Teammates = () => {
                     <Stack direction="row" spacing={1.5} sx={{ alignItems: 'flex-start' }}>
                       <Layers size={18} color="#5e6ad2" style={{ marginTop: 2 }} />
                       <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
-                        {teammate.explanation || "This user's background in research and technical skills perfectly balances your current profile."}
+                        {teammate.explanation || "This scholar's multidisciplinary background and expertise in adjacent domains perfectly balances your technical role."}
                       </Typography>
                     </Stack>
                   </Box>

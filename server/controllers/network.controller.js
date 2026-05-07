@@ -162,6 +162,30 @@ const NetworkController = {
     } catch (err) {
       next(err);
     }
+  },
+
+  /**
+   * GET /api/network/history
+   */
+  async getHistory(req, res, next) {
+    try {
+      const userId = req.user.id;
+      // Fetch recent collaboration activities for teams the user is/was part of
+      const [rows] = await pool.query(
+        `SELECT wa.id, wa.action, wa.details, wa.created_at, 
+                t.name as team_name, u.name as actor_name
+         FROM workspace_activity wa
+         JOIN teams t ON wa.team_id = t.id
+         JOIN team_members tm ON t.id = tm.team_id
+         JOIN users u ON wa.user_id = u.id
+         WHERE tm.user_id = ?
+         ORDER BY wa.created_at DESC LIMIT 20`,
+        [userId]
+      );
+      res.json({ history: rows });
+    } catch (err) {
+      next(err);
+    }
   }
 };
 

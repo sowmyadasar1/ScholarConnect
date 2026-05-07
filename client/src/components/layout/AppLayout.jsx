@@ -127,21 +127,20 @@ const AppLayout = () => {
 
           {/* Right-side actions */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Tooltip title="Settings">
+            <Tooltip title="Profile & Settings">
               <IconButton 
                 size="small" 
                 onClick={() => navigate('/settings')}
-                sx={{ color: 'text.secondary', '&:hover': { color: '#fff' } }}
+                sx={{ p: 0, border: '2px solid rgba(255,255,255,0.1)', '&:hover': { borderColor: '#5e6ad2' } }}
               >
-                <Settings size={20} />
+                <Avatar 
+                  src={user?.avatar_url} 
+                  sx={{ width: 36, height: 36 }}
+                >
+                  {user?.name?.[0]}
+                </Avatar>
               </IconButton>
             </Tooltip>
-            <Avatar 
-              src={user?.avatar_url} 
-              sx={{ width: 32, height: 32, ml: 1, border: '1px solid rgba(255,255,255,0.1)', display: { xs: 'none', sm: 'flex' } }}
-            >
-              {user?.name?.[0]}
-            </Avatar>
           </Box>
         </Box>
 

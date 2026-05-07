@@ -55,8 +55,8 @@ const SkillModel = {
     );
   },
 
-  async removeUserSkill(userId, skillId) {
-    await pool.query('DELETE FROM user_skills WHERE user_id = ? AND skill_id = ?', [userId, skillId]);
+  async removeUserSkill(userId, rowId) {
+    await pool.query('DELETE FROM user_skills WHERE user_id = ? AND id = ?', [userId, rowId]);
   },
 
   async updateUserSkillProficiency(userId, skillId, proficiency) {

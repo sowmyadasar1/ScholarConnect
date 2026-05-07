@@ -33,12 +33,26 @@ const ProjectModel = {
 
     const [rows] = await pool.query(query, params);
     const [[{ total }]] = await pool.query('SELECT COUNT(*) as total FROM projects WHERE is_active = 1');
-    return { projects: rows, total, page, limit };
+    
+    const projects = rows.map(r => {
+      if (typeof r.tech_stack === 'string') {
+        try { r.tech_stack = JSON.parse(r.tech_stack); }
+        catch (e) { r.tech_stack = r.tech_stack.split(',').map(s => s.trim()); }
+      }
+      return r;
+    });
+
+    return { projects, total, page, limit };
   },
 
   async findById(id) {
     const [rows] = await pool.query('SELECT * FROM projects WHERE id = ?', [id]);
-    return rows[0] || null;
+    const r = rows[0];
+    if (r && typeof r.tech_stack === 'string') {
+      try { r.tech_stack = JSON.parse(r.tech_stack); }
+      catch (e) { r.tech_stack = r.tech_stack.split(',').map(s => s.trim()); }
+    }
+    return r || null;
   },
 
   async create(data) {
@@ -141,14 +155,20 @@ const ProjectModel = {
 
   async getRecommendations(userId) {
     const [rows] = await pool.query(
-      `SELECT pr.*, p.title, p.description, p.difficulty_level, p.domain, p.estimated_weeks
+      `SELECT pr.*, p.title, p.description, p.difficulty_level, p.domain, p.estimated_weeks, p.tech_stack
        FROM project_recommendations pr
        JOIN projects p ON pr.project_id = p.id
        WHERE pr.user_id = ?
        ORDER BY pr.match_score DESC`,
       [userId]
     );
-    return rows;
+    return rows.map(r => {
+      if (typeof r.tech_stack === 'string') {
+        try { r.tech_stack = JSON.parse(r.tech_stack); }
+        catch (e) { r.tech_stack = r.tech_stack.split(',').map(s => s.trim()); }
+      }
+      return r;
+    });
   },
 
   // ----------- Skill Gaps -----------

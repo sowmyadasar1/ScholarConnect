@@ -65,11 +65,14 @@ const MentorModel = {
 
   async getSkills(mentorId) {
     const [rows] = await pool.query(
-      `SELECT us.*, s.name, s.category
-       FROM user_skills us 
-       JOIN skills s ON us.skill_id = s.id
-       JOIN mentors m ON us.user_id = m.user_id
-       WHERE m.id = ?`,
+      `SELECT s.name, s.category, IFNULL(ms.proficiency, us.proficiency) as proficiency
+       FROM mentors m
+       JOIN users u ON m.user_id = u.id
+       LEFT JOIN mentor_skills ms ON m.id = ms.mentor_id
+       LEFT JOIN user_skills us ON u.id = us.user_id
+       JOIN skills s ON (s.id = ms.skill_id OR s.id = us.skill_id)
+       WHERE m.id = ?
+       GROUP BY s.id`,
       [mentorId]
     );
     return rows;

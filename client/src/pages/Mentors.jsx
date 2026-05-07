@@ -198,7 +198,7 @@ const Mentors = () => {
                             }} 
                           />
                         );
-                      }) : <Typography variant="caption" color="text.secondary">General Academic Mentorship</Typography>}
+                      }) : <Typography variant="caption" color="text.secondary">Expert Consultation</Typography>}
                     </Box>
                   </Box>
                 </CardContent>

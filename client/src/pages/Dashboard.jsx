@@ -40,7 +40,6 @@ import {
 import { useOutletContext } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { projectService } from '../services/projectService';
-import { copilotService } from '../services/copilotService';
 import { collabService } from '../services/collabService';
 import { useAuth } from '../context/AuthContext';
 import VerifiedBadge from '../components/common/VerifiedBadge';
@@ -72,9 +71,7 @@ const Dashboard = () => {
   const [detailLoading, setDetailLoading] = useState(false);
   const [projectDetails, setProjectDetails] = useState(null);
 
-  // Copilot State
-  const [copilotLoading, setCopilotLoading] = useState(false);
-  const [copilotResult, setCopilotResult] = useState(null);
+
 
   useEffect(() => {
     fetchInitialData();
@@ -229,23 +226,10 @@ const Dashboard = () => {
     }
   };
 
-  const handleCopilotAction = async (action) => {
-    setCopilotLoading(true);
-    setCopilotResult(null);
-    try {
-      const data = await copilotService.generate(selectedProject.id, action, selectedProject.is_generated ? selectedProject : null);
-      setCopilotResult(data.result);
-    } catch (err) {
-      console.error('Copilot failed:', err);
-      setSnackbar({ open: true, message: 'AI Copilot failed to generate analysis.', severity: 'error' });
-    } finally {
-      setCopilotLoading(false);
-    }
-  };
+
 
   const handleOpenProject = async (project) => {
     setSelectedProject(project);
-    setCopilotResult(null);
     if (project.is_generated) {
       setProjectDetails({ 
         gaps: Array.isArray(project.gap_info?.missing_skills) ? project.gap_info.missing_skills : [], 
@@ -306,7 +290,7 @@ const Dashboard = () => {
         >
           <CardContent sx={{ p: 5, position: 'relative', zIndex: 1 }}>
             <Grid container spacing={4} sx={{ alignItems: 'center' }}>
-              <Grid item xs={12} md={8}>
+              <Grid xs={12} md={8}>
                 <Box 
                   sx={{ 
                     p: 1.5, 
@@ -334,7 +318,7 @@ const Dashboard = () => {
                   </Button>
                 </Box>
               </Grid>
-              <Grid item xs={12} md={4} sx={{ display: { xs: 'none', md: 'block' } }}>
+              <Grid xs={12} md={4} sx={{ display: { xs: 'none', md: 'block' } }}>
                 <Box sx={{ opacity: 0.5 }}>
                   <Code size={200} color="#5e6ad2" strokeWidth={0.5} />
                 </Box>
@@ -399,7 +383,7 @@ const Dashboard = () => {
           ) : (
             <Grid container spacing={2}>
               {myTeams.map(team => (
-                <Grid item xs={12} sm={6} md={4} key={team.id}>
+                <Grid xs={12} sm={6} md={4} key={team.id}>
                   <Card 
                     sx={{ 
                       background: 'rgba(94, 106, 210, 0.05)', 
@@ -454,10 +438,11 @@ const Dashboard = () => {
           <Grid container spacing={3}>
             {filteredProjects.map((project) => {
             // Cap match score at 100%
-            const matchScore = project.match_score ? Math.min(100, Math.round(project.match_score * 100)) : 85;
+            const baseScore = project.match_score ? Math.min(0.98, project.match_score) : (0.75 + ((project.id * 7) % 20) / 100);
+            const matchScore = Math.round(baseScore * 100);
             
             return (
-              <Grid item xs={12} md={6} lg={4} key={project.id}>
+              <Grid xs={12} md={6} lg={4} key={project.id}>
                 <Card 
                   className="project-card"
                   sx={{ 
@@ -558,12 +543,32 @@ const Dashboard = () => {
                     </Box>
 
                     <Stack direction="row" spacing={1} useFlexGap sx={{ mb: 1, flexWrap: 'wrap' }}>
-                      {(project.tech_stack || ['React', 'Firebase']).slice(0, 3).map(tech => (
-                        <Chip key={tech} label={tech} size="small" variant="outlined" sx={{ borderColor: 'rgba(255,255,255,0.1)', color: 'text.secondary', fontSize: '0.7rem', fontWeight: 600, mb: 1 }} />
-                      ))}
-                      {(project.tech_stack?.length > 3) && (
-                        <Typography variant="caption" sx={{ alignSelf: 'center', color: 'text.secondary', fontWeight: 600 }}>+{project.tech_stack.length - 3}</Typography>
-                      )}
+                      {(() => {
+                        let techArray = [];
+                        if (Array.isArray(project.tech_stack)) {
+                          techArray = project.tech_stack;
+                        } else if (typeof project.tech_stack === 'string') {
+                          try {
+                            techArray = JSON.parse(project.tech_stack);
+                            if (!Array.isArray(techArray)) techArray = [techArray];
+                          } catch (e) {
+                            techArray = project.tech_stack.split(',').map(s => s.trim());
+                          }
+                        }
+                        
+                        if (techArray.length === 0) techArray = ['React', 'Firebase'];
+                        
+                        return (
+                          <>
+                            {techArray.slice(0, 3).map(tech => (
+                              <Chip key={tech} label={tech} size="small" variant="outlined" sx={{ borderColor: 'rgba(255,255,255,0.1)', color: 'text.secondary', fontSize: '0.7rem', fontWeight: 600, mb: 1 }} />
+                            ))}
+                            {techArray.length > 3 && (
+                              <Typography variant="caption" sx={{ alignSelf: 'center', color: 'text.secondary', fontWeight: 600 }}>+{techArray.length - 3}</Typography>
+                            )}
+                          </>
+                        );
+                      })()}
                     </Stack>
                   </CardContent>
                   
@@ -634,41 +639,13 @@ const Dashboard = () => {
             </DialogTitle>
             <DialogContent sx={{ p: 4 }}>
               <Grid container spacing={4}>
-                <Grid item xs={12} md={7}>
+                <Grid xs={12} md={7}>
                   <Typography variant="h6" fontWeight={600} gutterBottom>Description</Typography>
                   <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
                     {selectedProject.description}
                   </Typography>
-                  
-                  {copilotLoading ? (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 6, gap: 2 }}>
-                      <CircularProgress size={32} />
-                      <Typography variant="body2" color="text.secondary">AI Copilot is analyzing...</Typography>
-                    </Box>
-                  ) : copilotResult ? (
-                    <Box sx={{ mt: 4, p: 3, borderRadius: 3, background: 'rgba(94, 106, 210, 0.05)', border: '1px solid rgba(94, 106, 210, 0.2)' }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                        <Typography variant="h6" fontWeight={600} color="#5e6ad2">
-                          <Sparkles size={18} style={{ marginRight: 8, verticalAlign: 'middle', marginTop: -2 }} />
-                          {copilotResult.title || 'Copilot Analysis'}
-                        </Typography>
-                        <Button size="small" onClick={() => setCopilotResult(null)} sx={{ color: 'text.secondary', minWidth: 'auto', p: 0.5 }}>Clear</Button>
-                      </Box>
-                      <Box sx={{ maxHeight: 400, overflowY: 'auto', pr: 1, '&::-webkit-scrollbar': { width: 6 }, '&::-webkit-scrollbar-thumb': { background: 'rgba(255,255,255,0.1)', borderRadius: 3 } }}>
-                        {copilotResult.content ? (
-                          <Typography variant="body2" component="pre" sx={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap', m: 0 }}>
-                            {copilotResult.content}
-                          </Typography>
-                        ) : (
-                          <Typography variant="body2" component="pre" sx={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap', m: 0 }}>
-                            {JSON.stringify(copilotResult, null, 2)}
-                          </Typography>
-                        )}
-                      </Box>
-                    </Box>
-                  ) : (
-                    <>
-                      <Typography variant="h6" fontWeight={600} sx={{ mt: 4, mb: 2 }}>Implementation Roadmap</Typography>
+                  <>
+                    <Typography variant="h6" fontWeight={600} sx={{ mt: 4, mb: 2 }}>Implementation Roadmap</Typography>
                       {detailLoading ? <CircularProgress size={20} /> : (
                         <Stack spacing={2}>
                           {(Array.isArray(projectDetails?.roadmap) ? projectDetails.roadmap : [
@@ -689,11 +666,10 @@ const Dashboard = () => {
                           ))}
                         </Stack>
                       )}
-                    </>
-                  )}
+                      </>
                 </Grid>
                 
-                <Grid item xs={12} md={5}>
+                <Grid xs={12} md={5}>
                   <Card sx={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 3 }}>
                     <CardContent>
                       <Typography variant="h6" fontWeight={600} gutterBottom>Skill Analysis</Typography>
@@ -755,18 +731,7 @@ const Dashboard = () => {
                         </>
                       )}
 
-                      {/* AI Copilot Actions */}
-                      <Typography variant="subtitle2" sx={{ mt: 4, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Sparkles size={16} color="#5e6ad2" />
-                        AI Copilot
-                      </Typography>
-                      <Grid container spacing={1}>
-                        <Grid item xs={6}><Button fullWidth variant="outlined" size="small" onClick={() => handleCopilotAction('architecture')} sx={{ fontSize: '0.7rem', borderColor: 'rgba(94, 106, 210, 0.3)', color: 'text.primary' }}>Architecture</Button></Grid>
-                        <Grid item xs={6}><Button fullWidth variant="outlined" size="small" onClick={() => handleCopilotAction('tech_stack')} sx={{ fontSize: '0.7rem', borderColor: 'rgba(94, 106, 210, 0.3)', color: 'text.primary' }}>Tech Stack</Button></Grid>
-                        <Grid item xs={6}><Button fullWidth variant="outlined" size="small" onClick={() => handleCopilotAction('milestones')} sx={{ fontSize: '0.7rem', borderColor: 'rgba(94, 106, 210, 0.3)', color: 'text.primary' }}>Milestones</Button></Grid>
-                        <Grid item xs={6}><Button fullWidth variant="outlined" size="small" onClick={() => handleCopilotAction('risks')} sx={{ fontSize: '0.7rem', borderColor: 'rgba(94, 106, 210, 0.3)', color: 'text.primary' }}>Risk Analysis</Button></Grid>
-                        <Grid item xs={12}><Button fullWidth variant="outlined" size="small" onClick={() => handleCopilotAction('readme')} sx={{ fontSize: '0.7rem', borderColor: 'rgba(94, 106, 210, 0.3)', color: 'text.primary' }}>Generate README</Button></Grid>
-                      </Grid>
+
 
                       {projectDetails?.gaps?.skill_analysis && (
                         <>

@@ -134,3 +134,23 @@ ml-service/recommender/__pycache__/
 # Database
 database/scholarconnect.db
 database/scholarconnect.sqlite
+
+# Scratch & Temporary Files
+scratch/
+line_127.json
+collaboration_log.txt
+collaboration_restored.jsx
+sync_teams.js
+setup_env.sh
+Project File/
+architecture/
+.DS_Store
+*.tmp
+*.bak
+*.swp
+
+# Subdirectory Node Modules
+client/node_modules/
+server/node_modules/
+ml-service/venv/
+ml-service/.venv/

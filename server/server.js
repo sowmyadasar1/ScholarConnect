@@ -58,7 +58,7 @@ app.use('/api/admin', require('./routes/admin.routes'));
 app.use('/api/notifications', require('./routes/notification.routes'));
 app.use('/api/requests', require('./routes/request.routes'));
 app.use('/api/workspace', require('./routes/workspace.routes'));
-app.use('/api/copilot', require('./routes/copilot.routes'));
+// app.use('/api/copilot', require('./routes/copilot.routes'));
 app.use('/api/reputation', require('./routes/reputation.routes'));
 app.use('/api/network', require('./routes/network.routes'));
 

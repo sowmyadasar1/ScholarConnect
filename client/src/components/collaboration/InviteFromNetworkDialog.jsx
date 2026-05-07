@@ -68,10 +68,10 @@ const InviteFromNetworkDialog = ({ open, onClose, projectId, onInviteSent }) => 
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth
-      PaperProps={{ sx: { background: '#16181D', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6 } }}>
-      <DialogTitle sx={{ p: 4 }}>
-        <Typography variant="h5" fontWeight={900}>Invite from Your Network</Typography>
-        <Typography variant="body2" color="text.secondary">Select from your past collaborators or smart suggestions.</Typography>
+      slotProps={{ paper: { sx: { background: '#16181D', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6 } } }}>
+      <DialogTitle sx={{ p: 4, fontWeight: 900, fontSize: '1.5rem' }}>
+        Invite from Your Network
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontWeight: 500 }}>Select from your past collaborators or smart suggestions.</Typography>
       </DialogTitle>
 
       <DialogContent sx={{ p: 4, pt: 0 }}>

@@ -139,6 +139,16 @@ const ProjectController = {
     try {
       const { query } = req.body;
       const userId = req.user.id;
+
+      // Basic validation for "meaningful" queries
+      const cleanQuery = (query || '').trim().toLowerCase();
+      if (cleanQuery.length < 3 || !/[aeiouy]/.test(cleanQuery) || cleanQuery.match(/^[^a-z0-9]+$/i)) {
+        return res.json({ 
+          projects: [], 
+          message: "Could you please provide a more specific academic or technical topic? We couldn't find matches for your current input." 
+        });
+      }
+
       const userSkills = await UserModel.getSkills(userId);
       const projects = await ProjectModel.findAll({ limit: 100 }); // fetch top 100 projects
       
