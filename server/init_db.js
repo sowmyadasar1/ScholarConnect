@@ -4,7 +4,23 @@ const { getDb } = require('./config/db');
 
 async function initDb() {
   try {
-    const schemaPath = path.join(__dirname, '..', 'database', 'schema.sql');
+    // Try multiple possible paths for schema.sql
+    const possiblePaths = [
+      path.join(__dirname, '..', '..', 'database', 'schema.sql'),
+      path.join(__dirname, '..', 'database', 'schema.sql'),
+      path.join(__dirname, 'database', 'schema.sql'),
+      path.join(process.cwd(), 'database', 'schema.sql')
+    ];
+
+    let schemaPath = possiblePaths[0];
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p)) {
+        schemaPath = p;
+        break;
+      }
+    }
+
+    console.log(`📖 Loading schema from: ${schemaPath}`);
     let schemaSql = fs.readFileSync(schemaPath, 'utf8');
 
     // Convert MySQL syntax to SQLite syntax
@@ -120,4 +136,8 @@ async function initDb() {
   }
 }
 
-initDb();
+if (require.main === module) {
+  initDb();
+}
+
+module.exports = { initDatabase: initDb };

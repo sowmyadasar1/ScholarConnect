@@ -91,6 +91,24 @@ app.use(errorHandler);
 // --- Start Server ---
 const startServer = async () => {
   try {
+    // Optional: Auto-initialize DB (Useful for Render Free Tier)
+    if (process.env.INITIALIZE_DB === 'true') {
+      console.log('📦 Initializing Database...');
+      try {
+        const { initDatabase } = require('./init_db');
+        await initDatabase();
+        
+        // Check if we should also seed
+        if (process.env.SEED_DB === 'true') {
+          console.log('🌱 Seeding Database...');
+          const { seedAll } = require('./seed_all');
+          await seedAll();
+        }
+      } catch (dbErr) {
+        console.error('Error during DB initialization:', dbErr);
+      }
+    }
+
     // Ensure DB connection before starting
     await testConnection();
 

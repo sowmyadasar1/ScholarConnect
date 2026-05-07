@@ -183,11 +183,14 @@ async function seed() {
 
     await pool.query('PRAGMA foreign_keys = ON');
     console.log('✅ Realistic relational seeding complete.');
-    process.exit(0);
   } catch (err) {
     console.error('❌ Seeding failed:', err);
-    process.exit(1);
+    throw err;
   }
 }
 
-seed();
+if (require.main === module) {
+  seed();
+}
+
+module.exports = { seedAll: seed };

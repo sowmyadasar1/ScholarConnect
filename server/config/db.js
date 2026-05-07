@@ -13,8 +13,30 @@ let dbPromise = null;
 
 async function getDb() {
   if (!dbPromise) {
+    const fs = require('fs');
+    const possibleDbPaths = [
+      path.join(__dirname, '..', '..', 'database', 'scholarconnect.db'),
+      path.join(__dirname, '..', 'database', 'scholarconnect.db'),
+      path.join(process.cwd(), '..', 'database', 'scholarconnect.db'),
+      path.join(process.cwd(), 'database', 'scholarconnect.db')
+    ];
+
+    let dbPath = possibleDbPaths[0];
+    for (const p of possibleDbPaths) {
+      if (fs.existsSync(path.dirname(p))) {
+        dbPath = p;
+        break;
+      }
+    }
+
+    // Ensure directory exists
+    const dbDir = path.dirname(dbPath);
+    if (!fs.existsSync(dbDir)) {
+      try { fs.mkdirSync(dbDir, { recursive: true }); } catch (e) {}
+    }
+
     dbPromise = open({
-      filename: path.join(__dirname, '..', '..', 'database', 'scholarconnect.db'),
+      filename: dbPath,
       driver: sqlite3.Database
     });
     
