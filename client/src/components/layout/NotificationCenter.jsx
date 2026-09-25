@@ -5,7 +5,7 @@ import {
 } from '@mui/material';
 import { Bell, Check, Users, BookOpen, MessageSquare, Briefcase } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../services/api';
 
 const NotificationCenter = () => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -26,8 +26,8 @@ const NotificationCenter = () => {
 
   const fetchNotifications = async () => {
     try {
-      const res = await axios.get('/api/notifications/me');
-      const countRes = await axios.get('/api/notifications/unread-count');
+      const res = await api.get('/notifications/me');
+      const countRes = await api.get('/notifications/unread-count');
       setNotifications(res.data.notifications || []);
       setUnreadCount(countRes.data.count || 0);
     } catch (err) {
@@ -45,7 +45,7 @@ const NotificationCenter = () => {
 
   const handleMarkAllRead = async () => {
     try {
-      await axios.put('/api/notifications/read-all');
+      await api.put('/notifications/read-all');
       setNotifications(prev => (prev || []).map(n => ({ ...n, is_read: 1 })));
       setUnreadCount(0);
     } catch (err) {
@@ -56,7 +56,7 @@ const NotificationCenter = () => {
   const handleNotificationClick = async (notification) => {
     try {
       if (!notification.is_read) {
-        await axios.put(`/api/notifications/${notification.id}/read`);
+        await api.put(`/notifications/${notification.id}/read`);
         setUnreadCount(prev => Math.max(0, prev - 1));
         setNotifications(prev => (prev || []).map(n => n.id === notification.id ? { ...n, is_read: 1 } : n));
       }

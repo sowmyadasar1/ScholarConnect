@@ -15,7 +15,7 @@ import {
   Clock,
   Briefcase
 } from 'lucide-react';
-import axios from 'axios';
+import { networkService } from '../../services/networkService';
 
 const InviteFromNetworkDialog = ({ open, onClose, projectId, onInviteSent }) => {
   const [loading, setLoading] = useState(false);
@@ -33,8 +33,8 @@ const InviteFromNetworkDialog = ({ open, onClose, projectId, onInviteSent }) => 
   const fetchSuggestions = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`/api/network/suggestions/${projectId}`);
-      setSuggestions(res.data.suggestions || []);
+      const suggs = await networkService.getInviteSuggestions(projectId);
+      setSuggestions(suggs || []);
     } catch (err) {
       console.error('Failed to fetch suggestions:', err);
     } finally {
@@ -52,7 +52,7 @@ const InviteFromNetworkDialog = ({ open, onClose, projectId, onInviteSent }) => 
     if (!selectedUser) return;
     setSending(true);
     try {
-      await axios.post('/api/network/invite-collaborator', {
+      await networkService.inviteCollaborator({
         projectId,
         collaboratorId: selectedUser.collaborator_id,
         ...inviteForm

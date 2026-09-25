@@ -26,6 +26,7 @@ app.use(morgan('dev'));
 // CORS configuration
 const allowedOrigins = [
   process.env.CLIENT_URL,
+  'https://scholar-connect-taupe.vercel.app',
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:3000'
@@ -35,11 +36,11 @@ app.use(cors({
   origin: (origin, callback) => {
     // allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
+    if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.vercel.app')) {
+      return callback(null, true);
     }
-    return callback(null, true);
+    const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+    return callback(new Error(msg), false);
   },
   credentials: true
 }));

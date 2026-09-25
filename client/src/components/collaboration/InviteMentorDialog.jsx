@@ -5,7 +5,7 @@ import {
   Stack, CircularProgress, MenuItem, Alert
 } from '@mui/material';
 import { UserCheck, Star, Clock, BookOpen } from 'lucide-react';
-import axios from 'axios';
+import { networkService } from '../../services/networkService';
 
 const InviteMentorDialog = ({ open, onClose, projectId, onInviteSent }) => {
   const [loading, setLoading] = useState(false);
@@ -22,8 +22,8 @@ const InviteMentorDialog = ({ open, onClose, projectId, onInviteSent }) => {
   const fetchMentors = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await axios.get('/api/network/mentors');
-      setMentors(res.data.mentors || []);
+      const mentorList = await networkService.getMentors();
+      setMentors(mentorList || []);
     } catch (err) {
       console.error('Failed to fetch mentors:', err);
     } finally {
@@ -41,7 +41,7 @@ const InviteMentorDialog = ({ open, onClose, projectId, onInviteSent }) => {
     if (!selectedMentor) return;
     setSending(true);
     try {
-      await axios.post('/api/network/invite-mentor', {
+      await networkService.inviteMentor({
         projectId,
         mentorId: selectedMentor.mentor_id,
         ...inviteForm

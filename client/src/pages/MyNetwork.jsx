@@ -13,7 +13,9 @@ import {
   CircularProgress,
   Stack,
   Tooltip,
-  IconButton
+  IconButton,
+  Snackbar,
+  Alert 
 } from '@mui/material';
 import { 
   Users, 
@@ -33,7 +35,7 @@ const MyNetwork = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [network, setNetwork] = useState({ collaborators: [], mentors: [], history: [] });
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
+  const [snackbarState, setSnackbarState] = useState({ open: false, message: '', severity: 'info' });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -49,9 +51,9 @@ const MyNetwork = () => {
         api.get('/network/history')
       ]);
       setNetwork({
-        collaborators: collabs.data.collaborators,
-        mentors: mentors.data.mentors,
-        history: history.data.history || []
+        collaborators: collabs.data?.collaborators || [],
+        mentors: mentors.data?.mentors || [],
+        history: history.data?.history || []
       });
     } catch (err) {
       console.error('Failed to fetch network:', err);
@@ -112,7 +114,7 @@ const MyNetwork = () => {
                 </Button>
                 <Tooltip title="Direct Message">
                   <IconButton 
-                    onClick={() => setSnackbar({ open: true, message: `Starting secure thread with ${collab.name}... Please wait for them to accept.`, severity: 'success' })}
+                    onClick={() => setSnackbarState({ open: true, message: `Starting secure thread with ${collab.name}... Please wait for them to accept.`, severity: 'success' })}
                     sx={{ bgcolor: 'rgba(255,255,255,0.03)', borderRadius: 2 }}
                   >
                     <MessageSquare size={18} />
@@ -257,13 +259,13 @@ const MyNetwork = () => {
       )}
 
       <Snackbar 
-        open={snackbar.open} 
+        open={snackbarState.open} 
         autoHideDuration={4000} 
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        onClose={() => setSnackbarState({ ...snackbarState, open: false })}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert severity={snackbar.severity} variant="filled" sx={{ borderRadius: 3 }}>
-          {snackbar.message}
+        <Alert severity={snackbarState.severity} variant="filled" sx={{ borderRadius: 3 }}>
+          {snackbarState.message}
         </Alert>
       </Snackbar>
     </Box>
