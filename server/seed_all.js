@@ -113,25 +113,124 @@ async function seed() {
     // 3. Seed Projects
     const projects = [
       {
-        title: "Medical Imaging with GANs",
-        description: "Synthesizing realistic MRI scans for rare neurological disorders.",
-        difficulty_level: 4,
-        domain: "Healthcare AI",
-        skills: ["Python", "PyTorch", "Machine Learning"]
+        title: "AI-Powered Academic Search Engine",
+        description: "A semantic search engine for academic papers using NLP and vector embeddings to help researchers find relevant citations faster.",
+        difficulty_level: 4, domain: "Computer Science",
+        skills: ["Python", "PyTorch", "React"]
       },
       {
-        title: "Interoperable Identity Protocol",
-        description: "Building a cross-chain decentralized identity standard for academic credentialing.",
-        difficulty_level: 5,
-        domain: "Web3",
-        skills: ["Solidity", "Blockchain", "TypeScript"]
+        title: "Blockchain for Credential Verification",
+        description: "Developing a decentralized platform for universities to issue and verify academic certificates using Ethereum smart contracts.",
+        difficulty_level: 3, domain: "Cybersecurity",
+        skills: ["Solidity", "Node.js", "PostgreSQL"]
       },
       {
-        title: "High-Throughput Logistics Engine",
-        description: "Real-time route optimization using Graph Theory and Node.js.",
-        difficulty_level: 3,
-        domain: "Logistics",
-        skills: ["Node.js", "PostgreSQL", "Docker", "AWS"]
+        title: "Autonomous Campus Delivery Robot",
+        description: "Robotics project focusing on SLAM for small-scale autonomous navigation in campus environments.",
+        difficulty_level: 5, domain: "Robotics",
+        skills: ["C++", "Python"]
+      },
+      {
+        title: "EcoTrack: Campus Sustainability Dashboard",
+        description: "IoT and web platform to monitor and visualize energy consumption and waste management efficiency across campus buildings.",
+        difficulty_level: 2, domain: "Sustainability",
+        skills: ["React", "Node.js"]
+      },
+      {
+        title: "Quantum Algorithm Simulator",
+        description: "An educational tool to visualize quantum gate operations and simulate basic algorithms like Shor's or Grover's.",
+        difficulty_level: 5, domain: "Physics",
+        skills: ["Python", "React"]
+      },
+      {
+        title: "Smart Traffic Management System",
+        description: "An AI-driven traffic signal optimization system using computer vision to reduce urban congestion and improve emergency vehicle routing.",
+        difficulty_level: 4, domain: "Computer Science",
+        skills: ["Python", "React"]
+      },
+      {
+        title: "Multilingual Chatbot for Student Services",
+        description: "Build an NLP-powered chatbot that helps university students with admissions, course registration, and campus navigation in multiple Indian languages.",
+        difficulty_level: 3, domain: "Natural Language Processing",
+        skills: ["Python", "React"]
+      },
+      {
+        title: "Real-Time Collaborative Code Editor",
+        description: "A Google Docs-like code editor with real-time collaboration, syntax highlighting, and integrated terminal for pair programming sessions.",
+        difficulty_level: 4, domain: "Developer Tools",
+        skills: ["TypeScript", "React", "Node.js"]
+      },
+      {
+        title: "Precision Agriculture Drone Platform",
+        description: "Design a drone-based system for monitoring crop health using multispectral imaging and machine learning classification.",
+        difficulty_level: 5, domain: "Agriculture Tech",
+        skills: ["Python"]
+      },
+      {
+        title: "Mental Health Companion App",
+        description: "A mobile application providing mood tracking, guided meditation, journaling, and anonymous peer support for college students.",
+        difficulty_level: 2, domain: "Healthcare",
+        skills: ["Node.js", "Firebase"]
+      },
+      {
+        title: "Open Source Learning Management System",
+        description: "Build a modern, accessible LMS with live classes, auto-grading, plagiarism detection, and analytics dashboards for educators.",
+        difficulty_level: 3, domain: "EdTech",
+        skills: ["React", "Node.js", "PostgreSQL", "Docker"]
+      },
+      {
+        title: "Federated Learning for Privacy-Preserving ML",
+        description: "Implement a federated learning framework that trains models across distributed hospital datasets without sharing sensitive patient data.",
+        difficulty_level: 5, domain: "Machine Learning",
+        skills: ["Python", "PyTorch", "Docker"]
+      },
+      {
+        title: "AR Campus Navigator",
+        description: "An augmented reality mobile app that overlays directions, building info, and event details onto the real-world campus view.",
+        difficulty_level: 3, domain: "Mobile Development",
+        skills: ["Firebase"]
+      },
+      {
+        title: "Automated Research Paper Summarizer",
+        description: "A tool that uses large language models to generate concise summaries, key findings, and citation graphs from uploaded research papers.",
+        difficulty_level: 3, domain: "Natural Language Processing",
+        skills: ["Python", "React"]
+      },
+      {
+        title: "Decentralized Voting System",
+        description: "A blockchain-based e-voting platform for student elections with verifiable, anonymous, and tamper-proof ballots.",
+        difficulty_level: 4, domain: "Web3",
+        skills: ["Solidity", "React", "Node.js"]
+      },
+      {
+        title: "Personal Finance Tracker for Students",
+        description: "A mobile-first web app that helps students track expenses, set savings goals, split bills, and get spending insights with charts.",
+        difficulty_level: 2, domain: "FinTech",
+        skills: ["React", "Node.js"]
+      },
+      {
+        title: "Gesture-Controlled Music Synthesizer",
+        description: "Use hand-tracking via MediaPipe to control a web-based music synthesizer, enabling touchless musical performance and composition.",
+        difficulty_level: 3, domain: "Human-Computer Interaction",
+        skills: ["React"]
+      },
+      {
+        title: "Distributed File Storage System",
+        description: "Build a peer-to-peer distributed file storage system with erasure coding, deduplication, and end-to-end encryption.",
+        difficulty_level: 5, domain: "Systems Architecture",
+        skills: ["Docker", "Kubernetes"]
+      },
+      {
+        title: "AI Study Buddy",
+        description: "An intelligent tutoring system that generates practice questions, provides explanations, and adapts to the student's learning pace using spaced repetition.",
+        difficulty_level: 3, domain: "EdTech",
+        skills: ["Python", "React", "PostgreSQL"]
+      },
+      {
+        title: "Earthquake Early Warning Network",
+        description: "Deploy a network of low-cost seismic sensors with edge ML models for real-time earthquake detection and community alert broadcasting.",
+        difficulty_level: 5, domain: "IoT",
+        skills: ["Python"]
       }
     ];
 
