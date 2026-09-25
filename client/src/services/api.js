@@ -35,10 +35,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       const currentPath = window.location.pathname;
-      const token = localStorage.getItem('token');
-      // Never kick demo users to login — demo tokens don't authenticate with backend
-      const isDemoToken = token === 'demo-token' || token === 'admin-demo-token';
-      if (currentPath !== '/login' && !isDemoToken) {
+      if (currentPath !== '/login') {
         localStorage.removeItem('token');
         window.location.href = '/login?error=session_expired';
       }

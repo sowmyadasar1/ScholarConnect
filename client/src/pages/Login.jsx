@@ -21,7 +21,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
-  const { loginWithGitHub, loginWithGoogle, loginWithEmail, loginAsDemo, register } = useAuth();
+  const { loginWithGitHub, loginWithGoogle, loginWithEmail, register } = useAuth();
   const navigate = useNavigate();
   
   const [tab, setTab] = useState(0); // 0 for Login, 1 for Register
@@ -70,28 +70,14 @@ const Login = () => {
     }
   };
 
-  const handleDemoLogin = (isAdmin = false) => {
-    setError(null);
-    loginAsDemo(isAdmin);
-    navigate('/dashboard');
-  };
-
   const handleGitHubLogin = () => {
     setError(null);
-    const isDemoMode = loginWithGitHub();
-    if (isDemoMode) {
-      navigate('/dashboard');
-    }
-    // If not demo mode, loginWithGitHub() redirects via window.location.href
+    loginWithGitHub();
   };
 
   const handleGoogleLogin = () => {
     setError(null);
-    const isDemoMode = loginWithGoogle();
-    if (isDemoMode) {
-      navigate('/dashboard');
-    }
-    // If not demo mode, loginWithGoogle() redirects via window.location.href
+    loginWithGoogle();
   };
 
   return (
@@ -163,23 +149,6 @@ const Login = () => {
             )}
 
             <Stack spacing={1.5}>
-              <Button
-                variant="contained"
-                fullWidth
-                size="large"
-                onClick={() => handleDemoLogin(false)}
-                sx={{
-                  py: 1.2,
-                  fontSize: '0.95rem',
-                  fontWeight: 700,
-                  background: 'linear-gradient(135deg, #5e6ad2 0%, #4b55c4 100%)',
-                  boxShadow: '0 4px 16px rgba(94, 106, 210, 0.4)',
-                  borderRadius: 2,
-                  textTransform: 'none'
-                }}
-              >
-                🚀 Quick Demo Access (Explore All Features)
-              </Button>
 
               <Button
                 variant="outlined"
