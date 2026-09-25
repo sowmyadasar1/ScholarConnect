@@ -72,16 +72,12 @@ const Login = () => {
 
   const handleGitHubLogin = () => {
     setError(null);
-    if (loginWithGitHub()) {
-      navigate('/dashboard');
-    }
+    loginWithGitHub();
   };
 
   const handleGoogleLogin = () => {
     setError(null);
-    if (loginWithGoogle()) {
-      navigate('/dashboard');
-    }
+    loginWithGoogle();
   };
 
   return (
