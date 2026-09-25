@@ -21,7 +21,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
-  const { loginWithGitHub, loginWithEmail, loginAsDemo, register } = useAuth();
+  const { loginWithGitHub, loginWithGoogle, loginWithEmail, loginAsDemo, register } = useAuth();
   const navigate = useNavigate();
   
   const [tab, setTab] = useState(0); // 0 for Login, 1 for Register
@@ -83,8 +83,7 @@ const Login = () => {
 
   const handleGoogleLogin = () => {
     setError(null);
-    const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
-    window.location.href = `${apiBase}/auth/google`;
+    loginWithGoogle();
   };
 
   return (

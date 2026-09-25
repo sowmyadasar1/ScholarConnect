@@ -122,8 +122,38 @@ export const AuthProvider = ({ children }) => {
   };
 
   const loginWithGitHub = () => {
-    const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
-    window.location.href = `${apiBase}/auth/github`;
+    const apiBase = import.meta.env.VITE_API_URL;
+    if (apiBase && apiBase.startsWith('http') && !apiBase.includes('localhost')) {
+      window.location.href = `${apiBase}/auth/github`;
+    } else {
+      console.warn('Backend OAuth endpoint not configured for production deployment. Using GitHub Demo login.');
+      const gitHubDemoUser = {
+        ...DEMO_USER,
+        name: 'Alex Rivera (GitHub)',
+        email: 'alex.rivera@github.com',
+        avatar_url: 'https://avatars.githubusercontent.com/u/583231?v=4'
+      };
+      localStorage.setItem('token', 'demo-token');
+      setUser(gitHubDemoUser);
+      window.location.href = '/dashboard';
+    }
+  };
+
+  const loginWithGoogle = () => {
+    const apiBase = import.meta.env.VITE_API_URL;
+    if (apiBase && apiBase.startsWith('http') && !apiBase.includes('localhost')) {
+      window.location.href = `${apiBase}/auth/google`;
+    } else {
+      console.warn('Backend OAuth endpoint not configured for production deployment. Using Google Demo login.');
+      const googleDemoUser = {
+        ...DEMO_USER,
+        name: 'Alex Rivera (Google)',
+        email: 'alex.rivera@gmail.com'
+      };
+      localStorage.setItem('token', 'demo-token');
+      setUser(googleDemoUser);
+      window.location.href = '/dashboard';
+    }
   };
 
   const syncGitHub = async () => {
@@ -177,7 +207,7 @@ export const AuthProvider = ({ children }) => {
   return (
     <AuthContext.Provider value={{
       user, loading,
-      register, loginWithEmail, loginWithGitHub, loginAsDemo,
+      register, loginWithEmail, loginWithGitHub, loginWithGoogle, loginAsDemo,
       syncGitHub, refreshProfile, updateProfile, addSkills, logout, deleteAccount
     }}>
       {children}
