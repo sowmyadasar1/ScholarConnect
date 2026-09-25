@@ -1,1 +1,8 @@
-{}
+{
+  "name": "scholarconnect-root",
+  "private": true,
+  "scripts": {
+    "build": "npm run build --prefix client",
+    "install-client": "npm install --prefix client"
+  }
+}
