@@ -34,9 +34,11 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid — clear and redirect
       const currentPath = window.location.pathname;
-      if (currentPath !== '/login') {
+      const token = localStorage.getItem('token');
+      // Never kick demo users to login — demo tokens don't authenticate with backend
+      const isDemoToken = token === 'demo-token' || token === 'admin-demo-token';
+      if (currentPath !== '/login' && !isDemoToken) {
         localStorage.removeItem('token');
         window.location.href = '/login?error=session_expired';
       }

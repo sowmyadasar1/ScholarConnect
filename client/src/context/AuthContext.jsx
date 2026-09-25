@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 
 const AuthContext = createContext(null);
@@ -44,12 +44,26 @@ export const AuthProvider = ({ children }) => {
     }
 
     const token = localStorage.getItem('token');
-    if (token && token !== 'undefined' && token !== 'null') {
-      fetchCurrentUser();
-    } else {
+    if (!token || token === 'undefined' || token === 'null') {
       localStorage.removeItem('token');
       setLoading(false);
+      return;
     }
+
+    // Fast path for demo tokens — no API call needed
+    if (token === 'admin-demo-token') {
+      setUser(DEMO_ADMIN_USER);
+      setLoading(false);
+      return;
+    }
+    if (token === 'demo-token') {
+      setUser(DEMO_USER);
+      setLoading(false);
+      return;
+    }
+
+    // Real JWT token — verify with backend
+    fetchCurrentUser();
   }, []);
 
   const fetchCurrentUser = async () => {
@@ -63,10 +77,8 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (err) {
       console.error('Failed to fetch user profile:', err?.response?.status || err.message);
-      const token = localStorage.getItem('token');
-      if (token === 'admin-demo-token') {
-        setUser(DEMO_ADMIN_USER);
-      } else if (token === 'demo-token' || (!err.response && token)) {
+      // If network is down but token exists, fall back to demo user
+      if (!err.response) {
         setUser(DEMO_USER);
       } else {
         localStorage.removeItem('token');
@@ -76,6 +88,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   };
+
 
   const register = async (email, password, name) => {
     try {
@@ -123,37 +136,45 @@ export const AuthProvider = ({ children }) => {
 
   const loginWithGitHub = () => {
     const apiBase = import.meta.env.VITE_API_URL;
-    if (apiBase && apiBase.startsWith('http') && !apiBase.includes('localhost')) {
+    // Only redirect to real backend OAuth if VITE_API_URL is a production URL (not localhost)
+    if (apiBase && apiBase.startsWith('http') && !apiBase.includes('localhost') && !apiBase.includes('127.0.0.1')) {
       window.location.href = `${apiBase}/auth/github`;
     } else {
-      console.warn('Backend OAuth endpoint not configured for production deployment. Using GitHub Demo login.');
+      // Demo fallback — set state directly, no page reload needed
+      console.info('[Auth] Backend not configured for OAuth — activating GitHub demo mode.');
       const gitHubDemoUser = {
         ...DEMO_USER,
-        name: 'Alex Rivera (GitHub)',
+        name: 'Alex Rivera (via GitHub)',
         email: 'alex.rivera@github.com',
         avatar_url: 'https://avatars.githubusercontent.com/u/583231?v=4'
       };
       localStorage.setItem('token', 'demo-token');
       setUser(gitHubDemoUser);
-      window.location.href = '/dashboard';
+      // Return signal so Login.jsx can navigate programmatically
+      return true;
     }
+    return false;
   };
 
   const loginWithGoogle = () => {
     const apiBase = import.meta.env.VITE_API_URL;
-    if (apiBase && apiBase.startsWith('http') && !apiBase.includes('localhost')) {
+    // Only redirect to real backend OAuth if VITE_API_URL is a production URL (not localhost)
+    if (apiBase && apiBase.startsWith('http') && !apiBase.includes('localhost') && !apiBase.includes('127.0.0.1')) {
       window.location.href = `${apiBase}/auth/google`;
     } else {
-      console.warn('Backend OAuth endpoint not configured for production deployment. Using Google Demo login.');
+      // Demo fallback — set state directly, no page reload needed
+      console.info('[Auth] Backend not configured for OAuth — activating Google demo mode.');
       const googleDemoUser = {
         ...DEMO_USER,
-        name: 'Alex Rivera (Google)',
+        name: 'Alex Rivera (via Google)',
         email: 'alex.rivera@gmail.com'
       };
       localStorage.setItem('token', 'demo-token');
       setUser(googleDemoUser);
-      window.location.href = '/dashboard';
+      // Return signal so Login.jsx can navigate programmatically
+      return true;
     }
+    return false;
   };
 
   const syncGitHub = async () => {

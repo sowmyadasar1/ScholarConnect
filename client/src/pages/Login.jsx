@@ -78,12 +78,20 @@ const Login = () => {
 
   const handleGitHubLogin = () => {
     setError(null);
-    loginWithGitHub();
+    const isDemoMode = loginWithGitHub();
+    if (isDemoMode) {
+      navigate('/dashboard');
+    }
+    // If not demo mode, loginWithGitHub() redirects via window.location.href
   };
 
   const handleGoogleLogin = () => {
     setError(null);
-    loginWithGoogle();
+    const isDemoMode = loginWithGoogle();
+    if (isDemoMode) {
+      navigate('/dashboard');
+    }
+    // If not demo mode, loginWithGoogle() redirects via window.location.href
   };
 
   return (
