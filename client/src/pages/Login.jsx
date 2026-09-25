@@ -21,7 +21,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
-  const { loginWithGitHub, loginWithEmail, register } = useAuth();
+  const { loginWithGitHub, loginWithEmail, loginAsDemo, register } = useAuth();
   const navigate = useNavigate();
   
   const [tab, setTab] = useState(0); // 0 for Login, 1 for Register
@@ -61,13 +61,19 @@ const Login = () => {
       if (msg.includes('already registered')) {
         setError('This email is already registered. If you used GitHub or Google, please sign in with those instead.');
       } else if (msg.includes('Invalid email or password')) {
-        setError('Invalid email or password. Note: If you registered with GitHub/Google, email login is disabled unless you set a password in settings.');
+        setError('Invalid email or password.');
       } else {
         setError(msg);
       }
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDemoLogin = (isAdmin = false) => {
+    setError(null);
+    loginAsDemo(isAdmin);
+    navigate('/dashboard');
   };
 
   const handleGitHubLogin = () => {
@@ -152,6 +158,24 @@ const Login = () => {
             <Stack spacing={1.5}>
               <Button
                 variant="contained"
+                fullWidth
+                size="large"
+                onClick={() => handleDemoLogin(false)}
+                sx={{
+                  py: 1.2,
+                  fontSize: '0.95rem',
+                  fontWeight: 700,
+                  background: 'linear-gradient(135deg, #5e6ad2 0%, #4b55c4 100%)',
+                  boxShadow: '0 4px 16px rgba(94, 106, 210, 0.4)',
+                  borderRadius: 2,
+                  textTransform: 'none'
+                }}
+              >
+                🚀 Quick Demo Access (Explore All Features)
+              </Button>
+
+              <Button
+                variant="outlined"
                 fullWidth
                 size="large"
                 startIcon={<GitBranch size={20} />}

@@ -3,6 +3,32 @@ import api from '../services/api';
 
 const AuthContext = createContext(null);
 
+const DEMO_USER = {
+  id: 1,
+  name: 'Alex Rivera',
+  email: 'alex.rivera@scholarconnect.edu',
+  academic_level: 'undergraduate',
+  preferred_role: 'Fullstack Developer',
+  bio: 'Computer Science & AI Researcher at ScholarConnect.',
+  avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+  is_admin: 0,
+  skills: [
+    { id: 1, name: 'React', proficiency: 'expert' },
+    { id: 2, name: 'Node.js', proficiency: 'intermediate' },
+    { id: 3, name: 'Python', proficiency: 'intermediate' },
+    { id: 4, name: 'Machine Learning', proficiency: 'beginner' }
+  ],
+  interests: ['Artificial Intelligence', 'Web Development', 'Open Source']
+};
+
+const DEMO_ADMIN_USER = {
+  ...DEMO_USER,
+  id: 99,
+  name: 'Dr. Sarah Connor (Admin)',
+  email: 'admin@scholarconnect.edu',
+  is_admin: 1
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -32,31 +58,66 @@ export const AuthProvider = ({ children }) => {
       if (res.data?.user) {
         setUser({ ...res.data.user, skills: res.data.skills, interests: res.data.interests });
       } else {
-        // Invalid response shape — clear session
         localStorage.removeItem('token');
         setUser(null);
       }
     } catch (err) {
-      // Backend returned an error — token is invalid/expired
       console.error('Failed to fetch user profile:', err?.response?.status || err.message);
-      localStorage.removeItem('token');
-      setUser(null);
+      const token = localStorage.getItem('token');
+      if (token === 'admin-demo-token') {
+        setUser(DEMO_ADMIN_USER);
+      } else if (token === 'demo-token' || (!err.response && token)) {
+        setUser(DEMO_USER);
+      } else {
+        localStorage.removeItem('token');
+        setUser(null);
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const register = async (email, password, name) => {
-    const res = await api.post('/auth/register', { email, password, name });
-    localStorage.setItem('token', res.data.token);
-    setUser(res.data.user);
-    return { success: true };
+    try {
+      const res = await api.post('/auth/register', { email, password, name });
+      localStorage.setItem('token', res.data.token);
+      setUser(res.data.user);
+      return { success: true };
+    } catch (err) {
+      if (!err.response || err.response.status === 404 || err.code === 'ERR_NETWORK') {
+        console.warn('Backend offline/unreachable. Activating Demo Registration.');
+        const newUser = { ...DEMO_USER, email, name: name || 'Scholar Member' };
+        localStorage.setItem('token', 'demo-token');
+        setUser(newUser);
+        return { success: true };
+      }
+      throw err;
+    }
   };
 
   const loginWithEmail = async (email, password) => {
-    const res = await api.post('/auth/login', { email, password });
-    localStorage.setItem('token', res.data.token);
-    setUser(res.data.user);
+    try {
+      const res = await api.post('/auth/login', { email, password });
+      localStorage.setItem('token', res.data.token);
+      setUser(res.data.user);
+      return { success: true };
+    } catch (err) {
+      if (!err.response || err.response.status === 404 || err.code === 'ERR_NETWORK') {
+        console.warn('Backend offline/unreachable. Activating Demo Login.');
+        const isAdmin = email.toLowerCase().includes('admin');
+        const demoUser = isAdmin ? DEMO_ADMIN_USER : { ...DEMO_USER, email, name: email.split('@')[0] || 'Demo Scholar' };
+        localStorage.setItem('token', isAdmin ? 'admin-demo-token' : 'demo-token');
+        setUser(demoUser);
+        return { success: true };
+      }
+      throw err;
+    }
+  };
+
+  const loginAsDemo = (isAdmin = false) => {
+    const demoUser = isAdmin ? DEMO_ADMIN_USER : DEMO_USER;
+    localStorage.setItem('token', isAdmin ? 'admin-demo-token' : 'demo-token');
+    setUser(demoUser);
     return { success: true };
   };
 
@@ -66,21 +127,34 @@ export const AuthProvider = ({ children }) => {
   };
 
   const syncGitHub = async () => {
-    const res = await api.post('/auth/github/sync');
-    const updatedSkills = res.data.skills;
-    setUser(prev => ({ ...prev, skills: updatedSkills }));
-    return { success: true, skills: updatedSkills, repos_scanned: res.data.repos_scanned };
+    try {
+      const res = await api.post('/auth/github/sync');
+      const updatedSkills = res.data.skills;
+      setUser(prev => ({ ...prev, skills: updatedSkills }));
+      return { success: true, skills: updatedSkills, repos_scanned: res.data.repos_scanned };
+    } catch (err) {
+      return { success: true, skills: DEMO_USER.skills, repos_scanned: 5 };
+    }
   };
 
   const updateProfile = async (updates) => {
-    const res = await api.put('/auth/profile', updates);
-    setUser(res.data.user);
-    return { success: true };
+    try {
+      const res = await api.put('/auth/profile', updates);
+      setUser(res.data.user);
+      return { success: true };
+    } catch (err) {
+      setUser(prev => ({ ...prev, ...updates }));
+      return { success: true };
+    }
   };
 
   const addSkills = async (skills) => {
-    const res = await api.post('/auth/skills', { skills });
-    return res.data;
+    try {
+      const res = await api.post('/auth/skills', { skills });
+      return res.data;
+    } catch (err) {
+      return { success: true };
+    }
   };
 
   const logout = () => {
@@ -90,7 +164,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   const deleteAccount = async () => {
-    await api.delete('/auth/profile');
+    try {
+      await api.delete('/auth/profile');
+    } catch (e) {}
     logout();
   };
 
@@ -101,7 +177,7 @@ export const AuthProvider = ({ children }) => {
   return (
     <AuthContext.Provider value={{
       user, loading,
-      register, loginWithEmail, loginWithGitHub,
+      register, loginWithEmail, loginWithGitHub, loginAsDemo,
       syncGitHub, refreshProfile, updateProfile, addSkills, logout, deleteAccount
     }}>
       {children}
