@@ -209,15 +209,20 @@ Run the client, server, and ML service independently using the setup instruction
 
 ### Dashboard
 
-> 📸 Add screenshot here
+![Dashboard](pictures/dashboard.png)
 
 ### Project Recommendations
 
-> 📸 Add screenshot here
+![Dashboard](pictures/proj_rec.png)
 
-### Mentor / Teammate Matching
+### Mentor Matching
 
-> 📸 Add screenshot here
+![Dashboard](pictures/mentor_matching.png)
+
+### Collaboration
+
+![Dashboard](pictures/collab.png)
+
 
 ---
 
