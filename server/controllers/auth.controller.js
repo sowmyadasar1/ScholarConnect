@@ -92,7 +92,8 @@ const AuthController = {
       if (err || !user) {
         console.error('[GitHub Auth] Callback Error:', err);
         console.error('[GitHub Auth] Info:', info);
-        return res.redirect(`${process.env.CLIENT_URL}/login?error=github_failed&details=${encodeURIComponent(err?.message || 'Unauthorized')}`);
+        const clientUrl = process.env.CLIENT_URL || 'https://scholar-connect-taupe.vercel.app';
+        return res.redirect(`${clientUrl}/login?error=github_failed&details=${encodeURIComponent(err?.message || 'Unauthorized')}`);
       }
       
       // Auto-elevate admin email on GitHub login too
@@ -112,9 +113,10 @@ const AuthController = {
         ProfileService.enrichFromGitHub(user.id, user.github_access_token);
       }
 
+      const clientUrl = process.env.CLIENT_URL || 'https://scholar-connect-taupe.vercel.app';
       const redirectUrl = isNewUser 
-        ? `${process.env.CLIENT_URL}/auth/callback?token=${token}&onboarding=true`
-        : `${process.env.CLIENT_URL}/auth/callback?token=${token}`;
+        ? `${clientUrl}/auth/callback?token=${token}&onboarding=true`
+        : `${clientUrl}/auth/callback?token=${token}`;
         
       res.redirect(redirectUrl);
     })(req, res, next);
@@ -131,11 +133,12 @@ const AuthController = {
    */
   googleCallback(req, res, next) {
     passport.authenticate('google', { session: false }, (err, user) => {
+      const clientUrl = process.env.CLIENT_URL || 'https://scholar-connect-taupe.vercel.app';
       if (err || !user) {
-        return res.redirect(`${process.env.CLIENT_URL}/login?error=google_failed`);
+        return res.redirect(`${clientUrl}/login?error=google_failed`);
       }
       const token = signToken(user);
-      res.redirect(`${process.env.CLIENT_URL}/auth/callback?token=${token}`);
+      res.redirect(`${clientUrl}/auth/callback?token=${token}`);
     })(req, res, next);
   },
 
