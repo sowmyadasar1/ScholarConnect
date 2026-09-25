@@ -4,9 +4,25 @@ import axios from 'axios';
  * Axios API Client
  * 
  * Central HTTP client for all backend communication.
- * Uses environment variable for base URL (falls back to localhost in dev).
+ * Handles both formats of VITE_API_URL:
+ *   - https://scholarconnect-fpsg.onrender.com
+ *   - https://scholarconnect-fpsg.onrender.com/api
+ * Always normalizes to end with /api.
  */
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
+function getBaseURL() {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (!envUrl) return 'http://localhost:5002/api';
+  
+  // Strip trailing slash
+  let url = envUrl.replace(/\/+$/, '');
+  // Ensure it ends with /api
+  if (!url.endsWith('/api')) {
+    url = url + '/api';
+  }
+  return url;
+}
+
+const API_BASE_URL = getBaseURL();
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -35,7 +51,8 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       const currentPath = window.location.pathname;
-      if (currentPath !== '/login') {
+      // Don't redirect if we're already on login or auth callback
+      if (currentPath !== '/login' && currentPath !== '/auth/callback') {
         localStorage.removeItem('token');
         window.location.href = '/login?error=session_expired';
       }

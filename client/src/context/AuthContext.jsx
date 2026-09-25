@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 
 const AuthContext = createContext(null);
@@ -7,28 +7,15 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Check for token from OAuth callback (query param) or localStorage
-    const params = new URLSearchParams(window.location.search);
-    const tokenFromCallback = params.get('token');
-    if (tokenFromCallback) {
-      localStorage.setItem('token', tokenFromCallback);
-      // Clean URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-
+  const fetchCurrentUser = useCallback(async () => {
     const token = localStorage.getItem('token');
     if (!token || token === 'undefined' || token === 'null') {
       localStorage.removeItem('token');
+      setUser(null);
       setLoading(false);
       return;
     }
 
-    // Real JWT token — verify with backend
-    fetchCurrentUser();
-  }, []);
-
-  const fetchCurrentUser = async () => {
     try {
       const res = await api.get('/auth/me');
       if (res.data?.user) {
@@ -44,7 +31,20 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // Check for token from OAuth callback (query param) or localStorage
+    const params = new URLSearchParams(window.location.search);
+    const tokenFromCallback = params.get('token');
+    if (tokenFromCallback) {
+      localStorage.setItem('token', tokenFromCallback);
+      // Clean URL without triggering a navigation
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    fetchCurrentUser();
+  }, [fetchCurrentUser]);
 
 
   const register = async (email, password, name) => {
@@ -74,16 +74,26 @@ export const AuthProvider = ({ children }) => {
   };
 
   const syncGitHub = async () => {
-    const res = await api.post('/auth/github/sync');
-    const updatedSkills = res.data.skills;
-    setUser(prev => ({ ...prev, skills: updatedSkills }));
-    return { success: true, skills: updatedSkills, repos_scanned: res.data.repos_scanned };
+    try {
+      const res = await api.post('/auth/github/sync');
+      const updatedSkills = res.data.skills;
+      setUser(prev => ({ ...prev, skills: updatedSkills }));
+      return { success: true, skills: updatedSkills, repos_scanned: res.data.repos_scanned };
+    } catch (err) {
+      console.error('syncGitHub failed:', err);
+      throw err;
+    }
   };
 
   const updateProfile = async (updates) => {
-    const res = await api.put('/auth/profile', updates);
-    setUser(res.data.user);
-    return { success: true };
+    try {
+      const res = await api.put('/auth/profile', updates);
+      setUser(res.data.user);
+      return { success: true };
+    } catch (err) {
+      console.error('updateProfile failed:', err);
+      throw err;
+    }
   };
 
   const addSkills = async (skills) => {
@@ -104,9 +114,10 @@ export const AuthProvider = ({ children }) => {
     logout();
   };
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
+    setLoading(true);
     await fetchCurrentUser();
-  };
+  }, [fetchCurrentUser]);
 
   return (
     <AuthContext.Provider value={{
