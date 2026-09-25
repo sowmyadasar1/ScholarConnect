@@ -138,7 +138,10 @@ export const AuthProvider = ({ children }) => {
     const apiBase = import.meta.env.VITE_API_URL;
     // Only redirect to real backend OAuth if VITE_API_URL is a production URL (not localhost)
     if (apiBase && apiBase.startsWith('http') && !apiBase.includes('localhost') && !apiBase.includes('127.0.0.1')) {
-      window.location.href = `${apiBase}/auth/github`;
+      // Derive the backend root: strip trailing /api if present so we always construct the right URL
+      // e.g. 'https://backend.onrender.com/api' OR 'https://backend.onrender.com' → same result
+      const backendRoot = apiBase.replace(/\/api\/?$/, '');
+      window.location.href = `${backendRoot}/api/auth/github`;
     } else {
       // Demo fallback — set state directly, no page reload needed
       console.info('[Auth] Backend not configured for OAuth — activating GitHub demo mode.');
@@ -160,7 +163,9 @@ export const AuthProvider = ({ children }) => {
     const apiBase = import.meta.env.VITE_API_URL;
     // Only redirect to real backend OAuth if VITE_API_URL is a production URL (not localhost)
     if (apiBase && apiBase.startsWith('http') && !apiBase.includes('localhost') && !apiBase.includes('127.0.0.1')) {
-      window.location.href = `${apiBase}/auth/google`;
+      // Derive the backend root: strip trailing /api if present
+      const backendRoot = apiBase.replace(/\/api\/?$/, '');
+      window.location.href = `${backendRoot}/api/auth/google`;
     } else {
       // Demo fallback — set state directly, no page reload needed
       console.info('[Auth] Backend not configured for OAuth — activating Google demo mode.');
