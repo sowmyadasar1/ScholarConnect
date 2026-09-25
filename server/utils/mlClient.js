@@ -10,7 +10,7 @@ const { GoogleGenAI } = require('@google/genai');
 // Initialize Gemini Client
 // If no API key is provided, we will fallback to mock data gracefully
 const ai = process.env.GEMINI_API_KEY ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }) : null;
-const MODEL = 'gemini-2.5-flash'; // Fast, cheap, and supports structured JSON output
+const MODEL = 'gemini-3.8-flash'; // Fast, cheap, and supports structured JSON output
 
 /**
  * Helper to call Gemini and parse JSON response
