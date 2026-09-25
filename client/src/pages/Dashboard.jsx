@@ -168,9 +168,18 @@ const Dashboard = () => {
       if (data && data.recommendations && data.recommendations.length > 0) {
         setRecommendations(data.recommendations);
         setAiPrompt('');
+      } else if (data && data.message) {
+        // Backend returned a message (e.g., API overloaded)
+        setSnackbar({ open: true, message: data.message, severity: 'error' });
+        setIsAiSearchActive(false);
+      } else {
+        setSnackbar({ open: true, message: 'Could not generate projects at this time.', severity: 'error' });
+        setIsAiSearchActive(false);
       }
     } catch (err) {
       console.error('AI Generation failed:', err);
+      setSnackbar({ open: true, message: 'AI Generation failed. Please try again.', severity: 'error' });
+      setIsAiSearchActive(false);
     } finally {
       setGenerating(false);
     }
@@ -182,15 +191,23 @@ const Dashboard = () => {
     setSearchQuery(query);
     try {
       const data = await projectService.generateAiProjects(query);
-      if (data && data.recommendations) {
+      if (data && data.recommendations && data.recommendations.length > 0) {
         setRecommendations(data.recommendations);
         const hasGenerated = data.recommendations.some(r => r.is_generated);
         if (hasGenerated) {
           setSnackbar({ open: true, message: 'AI synthesized new project concepts based on your query!', severity: 'success' });
         }
+      } else if (data && data.message) {
+        setSnackbar({ open: true, message: data.message, severity: 'error' });
+        setIsAiSearchActive(false);
+      } else {
+        setSnackbar({ open: true, message: 'Could not generate projects at this time.', severity: 'error' });
+        setIsAiSearchActive(false);
       }
     } catch (err) {
       console.error('AI Search failed:', err);
+      setSnackbar({ open: true, message: 'AI Search failed. Please try again.', severity: 'error' });
+      setIsAiSearchActive(false);
     } finally {
       setLoading(false);
     }

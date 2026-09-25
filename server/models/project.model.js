@@ -34,13 +34,22 @@ const ProjectModel = {
     const [rows] = await pool.query(query, params);
     const [[{ total }]] = await pool.query('SELECT COUNT(*) as total FROM projects WHERE is_active = 1');
     
-    const projects = rows.map(r => {
+    const projects = await Promise.all(rows.map(async (r) => {
       if (typeof r.tech_stack === 'string') {
         try { r.tech_stack = JSON.parse(r.tech_stack); }
         catch (e) { r.tech_stack = r.tech_stack.split(',').map(s => s.trim()); }
       }
+      
+      // If tech_stack is null, populate it from project_skills table
+      if (!r.tech_stack || r.tech_stack.length === 0) {
+        const [skillsRows] = await pool.query(
+          'SELECT s.name FROM skills s JOIN project_skills ps ON s.id = ps.skill_id WHERE ps.project_id = ?',
+          [r.id]
+        );
+        r.tech_stack = skillsRows.map(s => s.name);
+      }
       return r;
-    });
+    }));
 
     return { projects, total, page, limit };
   },
