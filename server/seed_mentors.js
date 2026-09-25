@@ -178,7 +178,7 @@ async function seedMentors() {
   }
 
   console.log('Done.');
-  db.close();
+  process.exit(0);
 }
 
 seedMentors();
