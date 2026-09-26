@@ -92,28 +92,10 @@ app.use(errorHandler);
 // --- Start Server ---
 const startServer = async () => {
   try {
-    // Optional: Auto-initialize DB (Useful for Render Free Tier)
-    if (process.env.INITIALIZE_DB === 'true') {
-      console.log('📦 Initializing Database...');
-      try {
-        const { initDatabase } = require('./init_db');
-        await initDatabase();
-        
-        // Check if we should also seed
-        if (process.env.SEED_DB === 'true') {
-          console.log('🌱 Seeding Database...');
-          const { seedAll } = require('./seed_all');
-          await seedAll();
-        }
-      } catch (dbErr) {
-        console.error('Error during DB initialization:', dbErr);
-      }
-    }
-
     // Ensure DB connection before starting
     await testConnection();
 
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', async () => {
       console.log(`
 🚀 ScholarConnect Backend Running
 --------------------------------
@@ -122,6 +104,25 @@ const startServer = async () => {
 📦 DB:   Connected (SQLite)
 --------------------------------
       `);
+      
+      // Optional: Auto-initialize DB (Useful for Render Free Tier)
+      // We do this AFTER binding so Render's port scan health check passes immediately.
+      if (process.env.INITIALIZE_DB === 'true') {
+        console.log('📦 Initializing Database...');
+        try {
+          const { initDatabase } = require('./init_db');
+          await initDatabase();
+          
+          // Check if we should also seed
+          if (process.env.SEED_DB === 'true') {
+            console.log('🌱 Seeding Database...');
+            const { seedAll } = require('./seed_all');
+            await seedAll();
+          }
+        } catch (dbErr) {
+          console.error('Error during DB initialization:', dbErr);
+        }
+      }
     });
   } catch (err) {
     console.error('Failed to start server:', err);
