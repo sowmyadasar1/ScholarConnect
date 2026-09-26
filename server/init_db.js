@@ -46,6 +46,9 @@ async function initDb() {
 
     const db = await getDb();
 
+    // Disable foreign key constraints so tables can be dropped in any order
+    await db.exec('PRAGMA foreign_keys = OFF;');
+
     // Split statements and execute individually
     const statements = schemaSql.split(';').map(s => s.trim()).filter(s => s.length > 0);
 
@@ -57,6 +60,9 @@ async function initDb() {
         console.error(e.message);
       }
     }
+
+    // Re-enable foreign key constraints
+    await db.exec('PRAGMA foreign_keys = ON;');
 
     console.log('✅ SQLite database initialized successfully from schema.sql');
 
