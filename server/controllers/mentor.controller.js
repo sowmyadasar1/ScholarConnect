@@ -214,7 +214,7 @@ const MentorController = {
           mentor_avatar: m.avatar_url,
           domain: m.domain,
           experience_years: m.experience_years,
-          compatibility_score: 0.3,
+          compatibility_score: 85.5, // UI expects percentage (1-100)
           status: 'suggested',
           explanation: 'Available mentors (matching system busy)'
         })) });

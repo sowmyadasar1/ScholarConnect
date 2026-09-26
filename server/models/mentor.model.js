@@ -108,7 +108,7 @@ const MentorModel = {
       if (excludeIds.has(m.mentor_id)) continue;
 
       await pool.query(
-        `INSERT INTO mentor_matches (user_id, mentor_id, compatibility_score, skill_match_score, domain_match_score, experience_score, availability_score, explanation, status)
+        `INSERT OR IGNORE INTO mentor_matches (user_id, mentor_id, compatibility_score, skill_match_score, domain_match_score, experience_score, availability_score, explanation, status)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'suggested')`,
         [
           userId, m.mentor_id, m.compatibility_score,

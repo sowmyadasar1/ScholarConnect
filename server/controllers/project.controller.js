@@ -159,7 +159,10 @@ const ProjectController = {
       );
       
       if (mlResult.fallback) {
-        return res.json({ recommendations: [], message: 'AI Generator unavailable.' });
+        return res.json({ 
+          recommendations: mlResult.recommendations, 
+          message: 'Google AI is currently overloaded. Showing a synthesized fallback project instead.' 
+        });
       }
 
       res.json({ recommendations: mlResult.recommendations, cold_start: false });
